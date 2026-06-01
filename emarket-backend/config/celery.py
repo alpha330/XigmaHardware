@@ -1,0 +1,47 @@
+import os
+from celery import Celery
+from celery.schedules import crontab
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+app = Celery('marketplace')
+app.config_from_object('django.conf:settings', namespace='CELERY')
+app.autodiscover_tasks()
+
+app.conf.beat_schedule = {
+    # تسک‌های Accounts
+    'clean-expired-otps': {
+        'task': 'accounts.clean_expired_otps',
+        'schedule': crontab(minute=0, hour='*/1'),  # هر یک ساعت
+    },
+    'deactivate-inactive-users': {
+        'task': 'accounts.deactivate_inactive_users',
+        'schedule': crontab(hour=2, minute=0),  # هر روز ساعت 2 صبح
+    },
+    'unlock-locked-accounts': {
+        'task': 'accounts.unlock_locked_accounts',
+        'schedule': crontab(minute='*/30'),  # هر 30 دقیقه
+    },
+    'clean-old-devices': {
+        'task': 'accounts.clean_old_devices',
+        'schedule': crontab(day_of_week=0, hour=3, minute=0),  # هر یکشنبه ساعت 3 صبح
+    },
+    'check-system-health': {
+        'task': 'accounts.check_system_health',
+        'schedule': crontab(minute='*/5'),  # هر 5 دقیقه
+    },
+    'send-admin-daily-report': {
+        'task': 'accounts.send_admin_daily_report',
+        'schedule': crontab(hour=8, minute=0),  # هر روز ساعت 8 صبح
+    },
+    'generate-user-report-daily': {
+        'task': 'accounts.generate_user_report',
+        'schedule': crontab(hour=0, minute=5),  # هر روز ساعت 00:05
+        'kwargs': {'report_type': 'daily'},
+    },
+    'generate-user-report-weekly': {
+        'task': 'accounts.generate_user_report',
+        'schedule': crontab(day_of_week=0, hour=1, minute=0),  # هر یکشنبه
+        'kwargs': {'report_type': 'weekly'},
+    },
+}
