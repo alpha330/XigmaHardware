@@ -50,13 +50,13 @@ docs/
 README.md
 *.md
 
-# Logs
-logs/
-*.log
+# # Logs
+# logs/
+# *.log
 
-# Media & Static (mount from volumes)
-media/
-staticfiles/
+# # Media & Static (mount from volumes)
+# media/
+# staticfiles/
 
 # Environment
 .env*

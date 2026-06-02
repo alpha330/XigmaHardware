@@ -8,8 +8,11 @@ from .api_root import api_root
 app_name = 'api'
 
 urlpatterns = [
-    # Accounts App
+    # API Root
     path('', api_root, name='api-root'),
+
+    # Accounts App
+    path('accounts/', include('apps.accounts.urls', namespace='accounts')),
 
     # Future Apps
     # path('market/', include('apps.market.urls', namespace='market')),
@@ -17,7 +20,4 @@ urlpatterns = [
     # path('financial/', include('apps.financial.urls', namespace='financial')),
     # path('payment/', include('apps.payment.urls', namespace='payment')),
     # path('basket/', include('apps.basket.urls', namespace='basket')),
-
-    # API Root
-    path('', include('config.api_root')),
 ]
