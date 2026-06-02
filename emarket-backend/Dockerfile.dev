@@ -46,8 +46,8 @@ RUN pip install --upgrade pip setuptools wheel \
     pytest-cov
 
 # Copy requirements
-COPY requirements/base.txt requirements/base.txt
-COPY requirements/dev.txt requirements/dev.txt
+COPY ./requirements/base.txt requirements/base.txt
+COPY ./requirements/dev.txt requirements/dev.txt
 
 # Install Python dependencies
 RUN pip install -r requirements/dev.txt
@@ -55,12 +55,14 @@ RUN pip install -r requirements/dev.txt
 # Create required directories
 RUN mkdir -p /app/logs /app/staticfiles /app/media
 
-# Copy entrypoint
-COPY entrypoint.dev.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# # Copy entrypoint
+# COPY ./entrypoint.dev.sh /entrypoint.sh
+
 
 # Copy source code
 COPY . .
+
+# RUN chmod +x /entrypoint.dev.sh
 
 # Expose port
 EXPOSE 8000
@@ -69,5 +71,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health/ || exit 1
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.dev.sh"]
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

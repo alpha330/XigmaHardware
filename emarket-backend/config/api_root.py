@@ -95,5 +95,5 @@ def api_root(request, format=None):
         'status': 'operational',
         'timestamp': __import__('django').utils.timezone.now().isoformat(),
     }
-    
+
     return Response(api_info)

@@ -1,5 +1,3 @@
-version: '3.8'
-
 # ====================================================
 # Marketplace Backend - Development Environment
 # ====================================================
@@ -90,8 +88,8 @@ services:
   # ==================== Django Backend ====================
   backend:
     build:
-      context: .
-      dockerfile: ./emarket-backend/Dockerfile.dev
+      context: ./emarket-backend
+      dockerfile: ./Dockerfile.dev
     container_name: marketplace_backend_dev
     restart: unless-stopped
     depends_on:
@@ -105,48 +103,48 @@ services:
       # Environment
       RUN_AS: dev
       DJANGO_SETTINGS_MODULE: config.settings.dev
-      
+
       # Django
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
       DEBUG: ${DEBUG:-true}
-      
+
       # Database
       DB_NAME: ${DB_NAME:-marketplace_dev}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_HOST: postgres
       DB_PORT: 5432
-      
+
       # Redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: django-db
-      
+
       # Email (MailHog)
       EMAIL_HOST: mailhog
       EMAIL_PORT: 1025
       EMAIL_USE_TLS: "false"
       EMAIL_USE_SSL: "false"
       DEFAULT_FROM_EMAIL: "noreply@marketplace.local"
-      
+
       # Site
       SITE_URL: http://localhost:8000
       SITE_NAME: "Marketplace Dev"
-      
+
       # Allowed Hosts
       ALLOWED_HOSTS: "*"
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
-      
+
       # Dev Settings
       CREATE_SUPERUSER: ${CREATE_SUPERUSER:-true}
       LOAD_FIXTURES: ${LOAD_FIXTURES:-false}
-      
+
       # Python
       PYTHONUNBUFFERED: 1
       TZ: Asia/Tehran
-      
+
     volumes:
       # Mount source code for hot reload
       - ./emarket-backend/:/app
@@ -178,7 +176,7 @@ services:
   # ==================== Celery Worker ====================
   celery_worker:
     build:
-      context: .
+      context: ./emarket-backend
       dockerfile: ./emarket-backend/Dockerfile.dev
     container_name: marketplace_celery_worker_dev
     restart: unless-stopped
@@ -226,7 +224,7 @@ services:
   # ==================== Celery Beat ====================
   celery_beat:
     build:
-      context: .
+      context: ./emarket-backend
       dockerfile: ./emarket-backend/Dockerfile.dev
     container_name: marketplace_celery_beat_dev
     restart: unless-stopped
@@ -327,8 +325,6 @@ networks:
   marketplace_network_dev:
     driver: bridge
     name: marketplace_network_dev
-    driver_opts:
-      com.docker.network.bridge.name: br-marketplace-dev
 
 # ==================== Volumes ====================
 volumes:

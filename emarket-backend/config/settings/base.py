@@ -25,20 +25,22 @@ THIRD_PARTY_APPS = [
     'django_celery_beat',
     'django_celery_results',
     'django_redis',
+    'silk',
 ]
 
 LOCAL_APPS = [
     'apps.accounts',
-    'apps.stock',
-    'apps.market',
-    'apps.financial',
-    'apps.payment',
-    'apps.basket',
+    # 'apps.stock',
+    # 'apps.market',
+    # 'apps.financial',
+    # 'apps.payment',
+    # 'apps.basket',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    'silk.middleware.SilkyMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
