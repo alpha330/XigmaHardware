@@ -1,0 +1,44 @@
+# ============================================================
+# Marketplace - Root .gitignore
+# ============================================================
+
+# Environment files (contain secrets)
+.env
+.env.*
+!.env.example
+
+# Docker volumes
+docker_volumes/
+postgres_data/
+redis_data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Backend
+emarket-backend/staticfiles/
+emarket-backend/media/
+emarket-backend/logs/
+emarket-backend/__pycache__/
+emarket-backend/**/__pycache__/
+emarket-backend/**/*.pyc
+emarket-backend/.pytest_cache/
+emarket-backend/.coverage
+emarket-backend/htmlcov/
+
+# Frontend (future)
+frontend/node_modules/
+frontend/.next/
+frontend/dist/

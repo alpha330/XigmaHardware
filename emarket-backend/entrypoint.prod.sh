@@ -2,60 +2,70 @@
 set -e
 
 echo "========================================="
-echo "🔴 Marketplace Backend - Production Mode"
+echo "🔴 Marketplace Backend - PRODUCTION"
 echo "========================================="
+echo ""
 
-# Wait for PostgreSQL
-echo "⏳ Waiting for PostgreSQL..."
-while ! nc -z $DB_HOST $DB_PORT; do
-    sleep 2
-done
-echo "✅ PostgreSQL is available!"
+wait_for_service() {
+    local host=$1
+    local port=$2
+    local service=$3
+    local max_attempts=30
+    local attempt=1
+    
+    echo "⏳ Waiting for $service..."
+    while ! nc -z $host $port; do
+        if [ $attempt -ge $max_attempts ]; then
+            echo "❌ $service not available after $max_attempts attempts"
+            exit 1
+        fi
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    echo "✅ $service is ready!"
+}
 
-# Wait for Redis
-echo "⏳ Waiting for Redis..."
-while ! nc -z $REDIS_HOST $REDIS_PORT; do
-    sleep 2
-done
-echo "✅ Redis is available!"
+# Wait for critical services
+wait_for_service ${DB_HOST} ${DB_PORT:-5432} "PostgreSQL"
+wait_for_service ${REDIS_HOST} ${REDIS_PORT:-6379} "Redis"
 
-# Run database migrations with safety check
-echo "📦 Running migrations..."
+echo ""
+echo "📦 Running database migrations..."
 python manage.py migrate --noinput
 
-# Verify migrations
-echo "🔍 Checking for unapplied migrations..."
+echo "🔍 Verifying migrations..."
 python manage.py showmigrations --plan | grep -q "\[ \]" && {
-    echo "❌ There are unapplied migrations!"
+    echo "❌ CRITICAL: Unapplied migrations found!"
     exit 1
-} || echo "✅ All migrations applied!"
+} || echo "✅ All migrations verified!"
 
-# Collect static files
 echo "📁 Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
-# Compress static files (if using django-compressor)
-echo "🗜️ Compressing static files..."
+echo "🗜️ Compressing static assets..."
 python manage.py compress --force 2>/dev/null || true
 
-# Clear cache
-echo "🧹 Clearing cache..."
+echo "🧹 Clearing old cache..."
 python manage.py clear_cache 2>/dev/null || true
 
-# Start Gunicorn with production config
-echo "🔴 Starting Gunicorn (Production)..."
-gunicorn config.wsgi:application \
+echo "🔄 Warming up application..."
+curl -s http://localhost:8000/health/ > /dev/null 2>&1 || true
+
+echo ""
+echo "🔴 Starting Gunicorn (Production Mode)..."
+exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
-    --workers 4 \
-    --threads 4 \
+    --workers ${GUNICORN_WORKERS:-4} \
+    --threads ${GUNICORN_THREADS:-4} \
     --worker-class gthread \
     --worker-connections 1000 \
-    --max-requests 1000 \
-    --max-requests-jitter 50 \
+    --max-requests 10000 \
+    --max-requests-jitter 100 \
     --timeout 120 \
     --graceful-timeout 30 \
     --keep-alive 5 \
     --access-logfile /app/logs/access.log \
     --error-logfile /app/logs/error.log \
     --log-level warning \
-    --preload
+    --preload \
+    --pid /tmp/gunicorn.pid

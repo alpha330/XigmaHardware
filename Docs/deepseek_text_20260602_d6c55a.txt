@@ -1,0 +1,83 @@
+XigmaMarket/XigmaHardware/           # روت پروژه (سطح 1)
+│
+├── emarket-backend/                 # بک‌اند Django (سطح 2)
+│   │
+│   ├── Dockerfile.dev              # داکر فایل توسعه
+│   ├── Dockerfile.stage            # داکر فایل استیجینگ
+│   ├── Dockerfile.prod             # داکر فایل تولید
+│   │
+│   ├── manage.py                   # Django manage.py
+│   ├── pyproject.toml              # Python project config
+│   ├── .dockerignore              # Docker ignore
+│   ├── .gitignore                 # Git ignore
+│   │
+│   ├── config/                     # Django Core Settings
+│   │   ├── __init__.py
+│   │   ├── settings/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py
+│   │   │   ├── dev.py
+│   │   │   ├── stage.py
+│   │   │   └── prod.py
+│   │   ├── urls.py
+│   │   ├── api_urls.py
+│   │   ├── api_root.py
+│   │   ├── wsgi.py
+│   │   ├── asgi.py
+│   │   ├── celery.py
+│   │   └── error_handlers.py
+│   │
+│   ├── apps/                       # Django Apps
+│   │   ├── accounts/              # ✅ تکمیل شده
+│   │   ├── market/                # بازار
+│   │   ├── stock/                 # انبار
+│   │   ├── financial/            # مالی
+│   │   ├── payment/              # پرداخت
+│   │   └── basket/               # سبد خرید
+│   │
+│   ├── static/                    # Static files
+│   ├── media/                     # Uploaded files
+│   ├── staticfiles/              # Collected static
+│   ├── templates/                # Django templates
+│   │   └── errors/
+│   │       ├── 400.html
+│   │       ├── 403.html
+│   │       ├── 404.html
+│   │       └── 500.html
+│   │
+│   ├── logs/                     # Application logs
+│   │
+│   ├── requirements/             # Python requirements
+│   │   ├── base.txt
+│   │   ├── dev.txt
+│   │   ├── stage.txt
+│   │   ├── prod.txt
+│   │   └── test.txt
+│   │
+│   └── docker/                   # Docker configs
+│       ├── entrypoint.dev.sh
+│       ├── entrypoint.stage.sh
+│       ├── entrypoint.prod.sh
+│       ├── nginx/
+│       │   ├── nginx.conf
+│       │   ├── dev.conf
+│       │   ├── stage.conf
+│       │   └── prod.conf
+│       ├── postgres/
+│       │   └── init.sql
+│       └── redis/
+│           └── redis.conf
+│
+├── docker-compose.dev.yml         # داکر کامپوز توسعه
+├── docker-compose.stage.yml       # داکر کامپوز استیجینگ
+├── docker-compose.prod.yml        # داکر کامپوز تولید
+├── docker-compose.test.yml        # داکر کامپوز تست
+│
+├── .env.dev                       # متغیرهای محیطی توسعه
+├── .env.stage                     # متغیرهای محیطی استیجینگ
+├── .env.prod                      # متغیرهای محیطی تولید
+│
+├── Makefile                       # دستورات مدیریت پروژه
+├── README.md                      # مستندات
+├── .gitignore                     # Git ignore (سطح روت)
+└── .editorconfig                  # Editor settings

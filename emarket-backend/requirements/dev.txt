@@ -1,0 +1,74 @@
+# ============================================================
+# Marketplace Backend - Development Requirements
+# ============================================================
+
+# Include base requirements
+-r base.txt
+
+# -------------------- Django Debug Tools --------------------
+django-debug-toolbar==4.3.0
+django-extensions==3.2.3
+django-browser-reload==1.12.1
+django-silk==5.1.0
+django-querycount==0.7.0
+
+# -------------------- Development Server --------------------
+django-livereload-server==0.5
+Werkzeug==3.0.2
+
+# -------------------- Testing --------------------
+pytest==8.2.0
+pytest-django==4.8.0
+pytest-cov==5.0.0
+pytest-xdist==3.6.1
+pytest-sugar==1.0.0
+pytest-factoryboy==2.7.0
+factory-boy==3.3.0
+Faker==25.2.0
+model-bakery==1.18.0
+coverage==7.5.1
+freezegun==1.5.1
+responses==0.25.0
+requests-mock==1.12.1
+
+# -------------------- Code Quality --------------------
+black==24.4.2
+isort==5.13.2
+flake8==7.0.0
+pylint==3.1.0
+mypy==1.10.0
+pre-commit==3.7.1
+bandit==1.7.8
+ruff==0.4.4
+autoflake==2.3.1
+
+# -------------------- Type Stubs --------------------
+django-stubs==4.2.7
+djangorestframework-stubs==3.14.5
+types-redis==4.6.0
+types-requests==2.31.0
+types-python-dateutil==2.9.0.20260323
+types-Pillow==10.1.0.2
+
+# -------------------- IPython & Shell --------------------
+ipython==8.24.0
+ipdb==0.13.13
+jupyter==1.0.0
+django-extensions==3.2.3
+
+# -------------------- Development Utilities --------------------
+watchdog==4.0.1
+# django-autofixture==0.12.0  ❌ حذف شد - incompatible with Python 3.10+
+# جایگزین: از model-bakery یا factory-boy استفاده کن
+httpie==3.2.2
+
+# -------------------- Performance Profiling --------------------
+django-cprofile-middleware==1.0.5
+pyinstrument==4.6.2
+memory-profiler==0.61.0
+snoop==0.4.3
+
+# -------------------- Documentation (Dev) --------------------
+Sphinx==7.3.7
+sphinx-rtd-theme==2.0.0
+myst-parser==3.0.1

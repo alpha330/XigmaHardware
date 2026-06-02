@@ -2,42 +2,55 @@
 set -e
 
 echo "========================================="
-echo "🔶 Marketplace Backend - Staging Mode"
+echo "🔶 Marketplace Backend - STAGING"
 echo "========================================="
+echo ""
 
-# Wait for PostgreSQL
-echo "⏳ Waiting for PostgreSQL..."
-while ! nc -z $DB_HOST $DB_PORT; do
-    sleep 1
-done
-echo "✅ PostgreSQL is available!"
+wait_for_service() {
+    local host=$1
+    local port=$2
+    local service=$3
+    
+    echo "⏳ Waiting for $service..."
+    while ! nc -z $host $port; do
+        sleep 1
+    done
+    echo "✅ $service is ready!"
+}
 
-# Wait for Redis
-echo "⏳ Waiting for Redis..."
-while ! nc -z $REDIS_HOST $REDIS_PORT; do
-    sleep 1
-done
-echo "✅ Redis is available!"
+wait_for_service ${DB_HOST} ${DB_PORT:-5432} "PostgreSQL"
+wait_for_service ${REDIS_HOST} ${REDIS_PORT:-6379} "Redis"
 
-# Run migrations
-echo "📦 Running migrations..."
+echo ""
+echo "📦 Running database migrations..."
 python manage.py migrate --noinput
 
-# Collect static files
+echo "🔍 Checking for unapplied migrations..."
+python manage.py showmigrations --plan | grep -q "\[ \]" && {
+    echo "❌ ERROR: Unapplied migrations found!"
+    exit 1
+} || echo "✅ All migrations applied!"
+
 echo "📁 Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
-# Compile messages (if using translations)
-echo "🌍 Compiling translation messages..."
+echo "🌍 Compiling translations..."
 python manage.py compilemessages 2>/dev/null || true
 
-# Start Gunicorn with staging config
-echo "🔶 Starting Gunicorn (Staging)..."
-gunicorn config.wsgi:application \
+echo ""
+echo "🔶 Starting Gunicorn (Staging Mode)..."
+exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
     --workers 3 \
     --threads 2 \
+    --worker-class gthread \
+    --max-requests 1000 \
+    --max-requests-jitter 50 \
     --timeout 120 \
+    --graceful-timeout 30 \
+    --keep-alive 5 \
     --access-logfile /app/logs/access.log \
     --error-logfile /app/logs/error.log \
-    --log-level info
+    --log-level info \
+    --capture-output \
+    --enable-stdio-inheritance

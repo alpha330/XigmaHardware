@@ -1,4 +1,4 @@
-# Dockerfile.stage
+# Stage 1: Builder
 FROM python:3.11-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -15,40 +15,44 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Install Python packages to /root/.local
 COPY requirements/base.txt requirements/base.txt
 COPY requirements/stage.txt requirements/stage.txt
-RUN pip install --upgrade pip && \
-    pip install --user -r requirements/stage.txt
 
-# Stage image
+RUN pip install --upgrade pip && \
+    pip install --user --no-cache-dir -r requirements/stage.txt
+
+# Stage 2: Runtime
 FROM python:3.11-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=config.settings
 
 WORKDIR /app
 
-# Install runtime dependencies only
+# Runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     libpq-dev \
     netcat-openbsd \
     curl \
+    gettext \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python packages from builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+COPY --from=builder /root/.local /usr/local
+ENV PATH=/usr/local/bin:$PATH
 
-# Create non-root user for security
-RUN groupadd -r marketplace && useradd -r -g marketplace marketplace && \
+# Create non-root user
+RUN groupadd -r marketplace && \
+    useradd -r -g marketplace -d /app -s /sbin/nologin marketplace && \
     mkdir -p /app/logs /app/staticfiles /app/media && \
     chown -R marketplace:marketplace /app
 
 # Copy entrypoint
-COPY entrypoint.stage.sh /entrypoint.sh
+COPY docker/entrypoint.stage.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Copy source code
@@ -58,5 +62,8 @@ COPY --chown=marketplace:marketplace . .
 USER marketplace
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:8000/health/ || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
