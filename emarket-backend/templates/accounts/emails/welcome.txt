@@ -1,0 +1,14 @@
+🎉 خوش آمدید {{ user.first_name }} عزیز!
+
+حساب کاربری شما با موفقیت در XigmaHardware ایجاد شد.
+
+اطلاعات حساب:
+- ایمیل: {{ user.email }}
+{% if user.mobile %}- موبایل: {{ user.mobile }}{% endif %}
+- تاریخ عضویت: {{ user.date_joined|date:"Y/m/d" }}
+
+ورود به داشبورد: https://xigmahardware.com/dashboard
+
+---
+XigmaHardware - قدرت سخت‌افزار، اعتماد شما
+© {% now "Y" %} XigmaHardware. تمامی حقوق محفوظ است.

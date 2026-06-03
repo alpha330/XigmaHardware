@@ -5,11 +5,32 @@ from celery.schedules import crontab
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 app = Celery('marketplace')
+app.conf.broker_connection_retry_on_startup = True
+# ✅ این خطوط رو اضافه کن:
 app.config_from_object('django.conf:settings', namespace='CELERY')
-app.autodiscover_tasks()
 
+# ✅ تنظیمات صریح broker و result backend
+app.conf.broker_url = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/1')
+app.conf.result_backend = 'django-db'
+app.conf.task_serializer = 'json'
+app.conf.result_serializer = 'json'
+app.conf.accept_content = ['json']
+app.conf.timezone = 'Asia/Tehran'
+app.conf.enable_utc = False
+
+# ✅ مسیر task ها
+app.autodiscover_tasks(['apps.accounts'])
+
+# ✅ اضافه کن: task رو حتماً acknowledge کنه
+app.conf.task_acks_late = True
+app.conf.task_reject_on_worker_lost = True
+
+# beat schedule
 app.conf.beat_schedule = {
-    # تسک‌های Accounts
+    'clean-expired-otps': {
+        'task': 'accounts.clean_expired_otps',
+        'schedule': crontab(minute=0, hour='*/1'),
+    },
     'clean-expired-otps': {
         'task': 'accounts.clean_expired_otps',
         'schedule': crontab(minute=0, hour='*/1'),  # هر یک ساعت

@@ -73,7 +73,12 @@ services:
       dockerfile: Dockerfile.dev
     container_name: marketplace_celery_worker_dev
     restart: unless-stopped
-    command: celery -A config worker -l info
+    entrypoint: []                          # ✅ ENTRYPOINT رو خالی کن
+    command: >
+      sh -c "
+      sleep 5 &&
+      celery -A config worker -l info --concurrency=4
+      "
     env_file:
       - .env.dev
     environment:
@@ -81,8 +86,10 @@ services:
       - REDIS_HOST=redis
       - EMAIL_HOST=mailhog
       - CELERY_BROKER_URL=redis://redis:6379/1
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
     depends_on:
-      - backend
+      - postgres
+      - redis
     volumes:
       - ./emarket-backend:/app
     networks:
@@ -94,6 +101,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: marketplace_celery_beat_dev
     restart: unless-stopped
+    entrypoint: []
     command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file:
       - .env.dev
@@ -107,6 +115,28 @@ services:
       - ./emarket-backend:/app
     networks:
       - marketplace_network_dev
+
+  flower:
+    image: mher/flower:2.0
+    container_name: marketplace_flower_dev
+    restart: unless-stopped
+    command: >
+      celery flower
+      --broker=redis://redis:6379/1
+      --port=5555
+      --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
+    ports:
+      - "${FLOWER_PORT:-5555}:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - FLOWER_UNAUTHENTICATED_API=true
+    depends_on:
+      - redis
+      - celery_worker
+    networks:
+      - marketplace_network_dev
+    profiles:
+      - tools
 
 networks:
   marketplace_network_dev:

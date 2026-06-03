@@ -1,0 +1,23 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}تایید ایمیل - XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>📧 تایید ایمیل</h1>
+
+<p>سلام {{ user.first_name }} عزیز،</p>
+
+<p>برای فعال‌سازی حساب کاربری خود در XigmaHardware، لطفاً روی دکمه زیر کلیک کنید:</p>
+
+<div style="text-align: center;">
+    <a href="{{ verification_url }}" class="btn">✅ تایید ایمیل</a>
+</div>
+
+<div class="highlight">
+    <p>این لینک تا <strong>{{ expiry_hours }} ساعت</strong> معتبر است.</p>
+    <p>اگر دکمه بالا کار نمی‌کند، لینک زیر را کپی و در مرورگر باز کنید:</p>
+    <p style="word-break: break-all; font-size: 12px;">{{ verification_url }}</p>
+</div>
+
+<p>اگر شما این درخواست را نداده‌اید، لطفاً این ایمیل را نادیده بگیرید.</p>
+{% endblock %}

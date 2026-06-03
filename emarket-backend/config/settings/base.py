@@ -31,7 +31,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     'apps.accounts',
-    # 'apps.stock',
+    'apps.stock',
     # 'apps.market',
     # 'apps.financial',
     # 'apps.payment',
@@ -167,6 +167,14 @@ CACHES = {
 # Session
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
+
+#email config
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'mailhog')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 1025))
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@marketplace.local')
 
 # Logging
 LOGGING = {

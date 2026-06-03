@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>{% block title %}XigmaHardware{% endblock %}</title>
+    <style>
+        /* Reset */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: Tahoma, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f4f4f4;
+            direction: rtl;
+        }
+
+        .email-wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+
+        /* Header */
+        .email-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom: 3px solid #e94560;
+        }
+
+        .email-header .logo {
+            margin-bottom: 15px;
+        }
+
+        .email-header .logo img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #e94560;
+            background: #ffffff;
+            padding: 5px;
+        }
+
+        .email-header .brand-name {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            margin: 10px 0;
+            letter-spacing: 1px;
+        }
+
+        .email-header .brand-slogan {
+            color: #e94560;
+            font-size: 14px;
+            font-weight: 300;
+        }
+
+        /* Body */
+        .email-body {
+            padding: 40px 30px;
+        }
+
+        .email-body h1 {
+            color: #0f3460;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .email-body p {
+            margin-bottom: 15px;
+            color: #555555;
+            font-size: 15px;
+        }
+
+        .email-body .highlight {
+            background-color: #f8f9fa;
+            border-right: 4px solid #e94560;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        /* Button */
+        .btn {
+            display: inline-block;
+            padding: 14px 35px;
+            background: linear-gradient(135deg, #e94560, #c23152);
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px 0;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #c23152, #e94560);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(233, 69, 96, 0.3);
+        }
+
+        /* Footer */
+        .email-footer {
+            background-color: #1a1a2e;
+            color: #cccccc;
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .email-footer .footer-links {
+            margin: 15px 0;
+        }
+
+        .email-footer .footer-links a {
+            color: #e94560;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .email-footer .social-icons {
+            margin: 15px 0;
+        }
+
+        .email-footer .social-icons a {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+            border-radius: 50%;
+            background-color: #0f3460;
+            color: #ffffff;
+            margin: 0 5px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .email-footer .social-icons a:hover {
+            background-color: #e94560;
+            transform: translateY(-2px);
+        }
+
+        .email-footer .copyright {
+            margin-top: 15px;
+            color: #888888;
+        }
+
+        /* Responsive */
+        @media only screen and (max-width: 480px) {
+            .email-body { padding: 20px 15px; }
+            .email-header { padding: 20px 15px; }
+            .btn { display: block; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <!-- Header -->
+        <div class="email-header">
+            <div class="logo">
+                <img src="https://xigmahardware.com/static/logo.png" alt="XigmaHardware Logo">
+            </div>
+            <div class="brand-name">XigmaHardware</div>
+            <div class="brand-slogan">قدرت سخت‌افزار، اعتماد شما</div>
+        </div>
+
+        <!-- Body -->
+        <div class="email-body">
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- Footer -->
+        <div class="email-footer">
+            <div class="brand-name" style="font-size: 18px; color: #ffffff;">XigmaHardware</div>
+
+            <div class="footer-links">
+                <a href="https://xigmahardware.com/about">درباره ما</a>
+                <a href="https://xigmahardware.com/contact">تماس با ما</a>
+                <a href="https://xigmahardware.com/terms">قوانین و مقررات</a>
+                <a href="https://xigmahardware.com/privacy">حریم خصوصی</a>
+            </div>
+
+            <div class="social-icons">
+                <a href="https://t.me/XigmaHardware" title="Telegram">✈</a>
+                <a href="https://instagram.com/XigmaHardware" title="Instagram">📷</a>
+                <a href="https://twitter.com/XigmaHardware" title="Twitter">𝕏</a>
+                <a href="https://linkedin.com/company/XigmaHardware" title="LinkedIn">🔗</a>
+            </div>
+
+            <p>این ایمیل به صورت خودکار از طرف XigmaHardware ارسال شده است.</p>
+            <p>لطفاً به این ایمیل پاسخ ندهید.</p>
+
+            <div class="copyright">
+                © {% now "Y" %} XigmaHardware. تمامی حقوق محفوظ است.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

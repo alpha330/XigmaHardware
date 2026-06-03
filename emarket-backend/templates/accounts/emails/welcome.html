@@ -1,0 +1,30 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}خوش آمدید به XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>🎉 خوش آمدید {{ user.first_name }} عزیز!</h1>
+
+<p>حساب کاربری شما با موفقیت در <strong>XigmaHardware</strong> ایجاد شد.</p>
+
+<div class="highlight">
+    <p><strong>اطلاعات حساب شما:</strong></p>
+    <p>📧 ایمیل: {{ user.email }}</p>
+    {% if user.mobile %}
+    <p>📱 موبایل: {{ user.mobile }}</p>
+    {% endif %}
+    <p>📅 تاریخ عضویت: {{ user.date_joined|date:"Y/m/d" }}</p>
+</div>
+
+<p>با XigmaHardware می‌توانید:</p>
+<p>🛒 خرید قطعات سخت‌افزاری با بهترین قیمت</p>
+<p>⚡ مقایسه و بررسی محصولات</p>
+<p>📊 پیگیری لحظه‌ای سفارشات</p>
+<p>💰 کیف پول اختصاصی با تراکنش‌های امن</p>
+
+<a href="https://xigmahardware.com/dashboard" class="btn">ورود به داشبورد</a>
+
+<p style="text-align: center; margin-top: 20px;">
+    اگر سوالی دارید، تیم پشتیبانی ما همیشه آماده کمک به شماست.
+</p>
+{% endblock %}

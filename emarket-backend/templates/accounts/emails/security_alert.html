@@ -1,0 +1,24 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}هشدار امنیتی - XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>🚨 هشدار امنیتی</h1>
+
+<p>سلام {{ user.first_name }} عزیز،</p>
+
+<div class="highlight" style="border-right-color: #ff6b6b;">
+    <p style="color: #ff6b6b; font-weight: bold;">{{ message }}</p>
+</div>
+
+<p>اگر این فعالیت توسط شما انجام نشده است:</p>
+<ol>
+    <li>بلافاصله رمز عبور خود را تغییر دهید</li>
+    <li>دستگاه‌های ناشناس را از حساب خود حذف کنید</li>
+    <li>با پشتیبانی تماس بگیرید</li>
+</ol>
+
+<div style="text-align: center;">
+    <a href="https://xigmahardware.com/account/security" class="btn">🔒 تنظیمات امنیتی</a>
+</div>
+{% endblock %}

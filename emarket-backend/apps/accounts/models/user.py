@@ -10,7 +10,7 @@ from apps.accounts.validators import validate_iranian_phone
 
 class User(AbstractBaseUser, PermissionsMixin):
     """
-    مدل اصلی کاربر با قابلیت ثبت‌نام با ایمیل یا موبایل
+    مدل اصلی کاربر
     """
     id = models.UUIDField(
         primary_key=True,
@@ -18,8 +18,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         editable=False,
         verbose_name=_('ID')
     )
-    
-    # فیلدهای احراز هویت
+
+    # ==================== Authentication Fields ====================
     email = models.EmailField(
         _('Email'),
         max_length=255,
@@ -27,9 +27,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         null=True,
         blank=True,
         db_index=True,
-        help_text=_('Required if registering with email')
     )
-    
+
     mobile = models.CharField(
         _('Mobile'),
         max_length=11,
@@ -38,33 +37,34 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         validators=[validate_iranian_phone],
         db_index=True,
-        help_text=_('Required if registering with mobile')
     )
-    
-    # روش ثبت‌نام
+
+    # ==================== Personal Information ====================
+    first_name = models.CharField(
+        _('first name'),
+        max_length=150,
+        blank=True
+    )
+
+    last_name = models.CharField(
+        _('last name'),
+        max_length=150,
+        blank=True
+    )
+
+    # ==================== Status Fields ====================
     registration_method = models.CharField(
         _('Registration Method'),
         max_length=10,
         choices=VerificationType.choices,
         null=True,
         blank=True,
-        help_text=_('How user registered: email or mobile')
     )
-    
-    # وضعیت‌های تایید
-    is_email_verified = models.BooleanField(
-        _('Email Verified'),
-        default=False,
-        help_text=_('Whether email has been verified')
-    )
-    
-    is_mobile_verified = models.BooleanField(
-        _('Mobile Verified'),
-        default=False,
-        help_text=_('Whether mobile has been verified')
-    )
-    
-    # نقش کاربر
+
+    is_email_verified = models.BooleanField(_('Email Verified'), default=False)
+    is_mobile_verified = models.BooleanField(_('Mobile Verified'), default=False)
+
+    # ==================== Role & Permissions ====================
     role = models.CharField(
         _('Role'),
         max_length=20,
@@ -72,74 +72,35 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=UserRole.default(),
         db_index=True
     )
-    
-    # وضعیت کلی حساب
-    is_active = models.BooleanField(
-        _('Active'),
-        default=True,
-        db_index=True
-    )
-    
-    is_staff = models.BooleanField(
-        _('Staff Status'),
-        default=False
-    )
-    
-    # اطلاعات امنیتی
-    last_login_ip = models.GenericIPAddressField(
-        _('Last Login IP'),
-        null=True,
-        blank=True
-    )
-    
-    last_login_method = models.CharField(
-        _('Last Login Method'),
-        max_length=10,
-        choices=VerificationType.choices,
-        null=True,
-        blank=True
-    )
-    
-    failed_login_attempts = models.PositiveIntegerField(
-        _('Failed Login Attempts'),
-        default=0
-    )
-    
-    locked_until = models.DateTimeField(
-        _('Locked Until'),
-        null=True,
-        blank=True
-    )
-    
-    # تایم‌استمپ‌ها
-    created_at = models.DateTimeField(
-        _('Created At'),
-        auto_now_add=True
-    )
-    
-    updated_at = models.DateTimeField(
-        _('Updated At'),
-        auto_now=True
-    )
-    
-    last_login = models.DateTimeField(
-        _('Last Login'),
-        null=True,
-        blank=True
-    )
-    
-    last_activity = models.DateTimeField(
-        _('Last Activity'),
-        default=timezone.now
-    )
-    
-    # استفاده از منیجر سفارشی
+
+    is_active = models.BooleanField(_('Active'), default=True, db_index=True)
+    is_staff = models.BooleanField(_('Staff Status'), default=False)
+
+    # ==================== Security Fields ====================
+    last_login_ip = models.GenericIPAddressField(_('Last Login IP'), null=True, blank=True)
+    last_login_method = models.CharField(_('Last Login Method'), max_length=10, choices=VerificationType.choices, null=True, blank=True)
+    failed_login_attempts = models.PositiveIntegerField(_('Failed Login Attempts'), default=0)
+    locked_until = models.DateTimeField(_('Locked Until'), null=True, blank=True)
+
+    # ==================== Timestamps ====================
+    date_joined = models.DateTimeField(_('date joined'), default=timezone.now, editable=False)
+    created_at = models.DateTimeField(_('Created At'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Updated At'), auto_now=True)
+    last_login = models.DateTimeField(_('Last Login'), null=True, blank=True)
+    last_activity = models.DateTimeField(_('Last Activity'), default=timezone.now)
+
+    # ==================== Manager ====================
     objects = UserManager()
-    
-    # تنظیمات احراز هویت
+
+    # ==================== Django Settings ====================
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
-    
+
+    @property
+    def user_type(self):
+        """برای سازگاری با اسم قدیمی"""
+        return self.role
+
     class Meta:
         db_table = 'users'
         verbose_name = _('User')
@@ -150,34 +111,36 @@ class User(AbstractBaseUser, PermissionsMixin):
             models.Index(fields=['role', 'is_active']),
             models.Index(fields=['is_email_verified', 'is_mobile_verified']),
         ]
-    
+
     def __str__(self):
         return self.get_display_name()
-    
+
     def get_display_name(self):
-        """نمایش نام کاربر بر اساس اطلاعات موجود"""
+        """نمایش نام کاربر"""
         if hasattr(self, 'profile'):
             if self.profile.is_legal and self.profile.company_name:
                 return self.profile.company_name
             elif self.profile.full_name:
                 return self.profile.full_name
-        
+
+        if self.first_name or self.last_name:
+            return f"{self.first_name} {self.last_name}".strip()
+
         return self.email or self.mobile or str(self.id)
-    
+
+    def get_full_name(self):
+        """Django standard method"""
+        if self.first_name or self.last_name:
+            return f"{self.first_name} {self.last_name}".strip()
+        return self.email or self.mobile or ''
+
     def get_short_name(self):
-        """نام کوتاه کاربر"""
-        if hasattr(self, 'profile') and self.profile.full_name:
-            return self.profile.full_name.split()[0]
-        return self.get_display_name()
-    
+        """Django standard method"""
+        return self.first_name or self.email.split('@')[0] if self.email else self.mobile or ''
+
+    # ==================== Properties ====================
     @property
     def is_verified(self):
-        """
-        بررسی می‌کند که آیا کاربر تایید شده است
-        اگر با ایمیل ثبت‌نام کرده، ایمیل باید تایید شود
-        اگر با موبایل ثبت‌نام کرده، موبایل باید تایید شود
-        اگر با هر دو ثبت‌نام کرده، هر دو باید تایید شوند
-        """
         if self.registration_method == VerificationType.EMAIL:
             return self.is_email_verified
         elif self.registration_method == VerificationType.MOBILE:
@@ -189,42 +152,33 @@ class User(AbstractBaseUser, PermissionsMixin):
         elif self.mobile:
             return self.is_mobile_verified
         return False
-    
+
     @property
     def is_locked(self):
-        """بررسی قفل بودن حساب کاربری"""
         if self.locked_until and self.locked_until > timezone.now():
             return True
         return False
-    
+
+    # ==================== Methods ====================
     def get_primary_contact(self):
-        """دریافت راه ارتباطی اصلی"""
-        if self.mobile:
-            return self.mobile
-        return self.email
-    
+        return self.mobile or self.email
+
     def verify_email(self):
-        """تایید ایمیل کاربر"""
         self.is_email_verified = True
         self.save(update_fields=['is_email_verified', 'updated_at'])
-    
+
     def verify_mobile(self):
-        """تایید موبایل کاربر"""
         self.is_mobile_verified = True
         self.save(update_fields=['is_mobile_verified', 'updated_at'])
-    
+
     def increment_failed_login(self):
-        """افزایش تعداد تلاش‌های ناموفق"""
         self.failed_login_attempts += 1
-        
         if self.failed_login_attempts >= 5:
             self.locked_until = timezone.now() + timezone.timedelta(minutes=30)
             self.failed_login_attempts = 0
-        
         self.save(update_fields=['failed_login_attempts', 'locked_until'])
-    
+
     def reset_failed_login(self):
-        """بازنشانی تلاش‌های ناموفق"""
         self.failed_login_attempts = 0
         self.locked_until = None
         self.save(update_fields=['failed_login_attempts', 'locked_until'])
