@@ -15,9 +15,9 @@ urlpatterns = [
     path('accounts/', include('apps.accounts.urls', namespace='accounts')),
 
     # Future Apps
-    # path('market/', include('apps.market.urls', namespace='market')),
+    #path('market/', include('apps.market.urls', namespace='market')),
     path('stock/', include('apps.stock.urls', namespace='stock')),
     # path('financial/', include('apps.financial.urls', namespace='financial')),
     # path('payment/', include('apps.payment.urls', namespace='payment')),
-    # path('basket/', include('apps.basket.urls', namespace='basket')),
+    path('basket/', include('apps.basket.urls', namespace='basket')),
 ]

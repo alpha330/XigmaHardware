@@ -64,7 +64,6 @@ COPY . .
 
 # RUN chmod +x /entrypoint.dev.sh
 
-# Expose port
 EXPOSE 8000
 
 # Health check

@@ -31,32 +31,32 @@ echo "📦 Running migrations..."
 python manage.py makemigrations
 python manage.py migrate
 
-echo "📁 Collecting static files..."
-python manage.py collectstatic --noinput --clear
+# echo "📁 Collecting static files..."
+# python manage.py collectstatic --noinput --clear
 
-# Create superuser for development
-if [ "${CREATE_SUPERUSER:-false}" = "true" ]; then
-    echo "👤 Creating superuser..."
-    python manage.py shell -c "
-from django.contrib.auth import get_user_model
-User = get_user_model()
-if not User.objects.filter(email='admin@example.com').exists():
-    User.objects.create_superuser(
-        email='admin@example.com',
-        mobile='09123456789',
-        password='Admin123!@#',
-        first_name='Admin',
-        last_name='User'
-    )
-    print('Superuser created!')
-" || true
-fi
+# # Create superuser for development
+# if [ "${CREATE_SUPERUSER:-false}" = "true" ]; then
+#     echo "👤 Creating superuser..."
+#     python manage.py shell -c "
+# from django.contrib.auth import get_user_model
+# User = get_user_model()
+# if not User.objects.filter(email='admin@example.com').exists():
+#     User.objects.create_superuser(
+#         email='admin@example.com',
+#         mobile='09123456789',
+#         password='Admin123!@#',
+#         first_name='Admin',
+#         last_name='User'
+#     )
+#     print('Superuser created!')
+# " || true
+# fi
 
-echo ""
-echo "🔥 Starting Django development server..."
-echo "📚 API Documentation: http://localhost:${BACKEND_PORT:-8000}/swagger/"
-echo "📧 MailHog Interface: http://localhost:${MAILHOG_UI_PORT:-8025}/"
-echo "🌸 Flower: http://localhost:${FLOWER_PORT:-5555}/"
-echo ""
+# echo ""
+# echo "🔥 Starting Django development server..."
+# echo "📚 API Documentation: http://localhost:${BACKEND_PORT:-8000}/swagger/"
+# echo "📧 MailHog Interface: http://localhost:${MAILHOG_UI_PORT:-8025}/"
+# echo "🌸 Flower: http://localhost:${FLOWER_PORT:-5555}/"
+# echo ""
 
-exec python manage.py runserver 0.0.0.0:${BACKEND_PORT:-8000}
+# exec python manage.py runserver 0.0.0.0:${BACKEND_PORT:-8000}

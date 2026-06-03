@@ -77,6 +77,7 @@ def api_root(request, format=None):
                 'refresh': '7 days',
             },
         },
+        'basket': '/api/v1/basket/',
         'response_format': {
             'success': {
                 'status': 'success',
