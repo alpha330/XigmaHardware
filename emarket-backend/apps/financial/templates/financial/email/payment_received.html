@@ -1,0 +1,27 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}پرداخت دریافت شد - XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>💳 پرداخت دریافت شد</h1>
+
+<p>سلام {{ user_name }} عزیز،</p>
+
+<p>پرداخت شما با موفقیت دریافت شد:</p>
+
+<div class="highlight" style="border-right-color: #28a745;">
+    <p><strong>🧾 فاکتور:</strong> {{ invoice_number }}</p>
+    <p><strong>💰 مبلغ پرداختی:</strong> {{ paid_amount }} ریال</p>
+    <p><strong>🏦 روش پرداخت:</strong> {{ payment_method }}</p>
+    <p><strong>🔢 کد پیگیری:</strong> {{ reference_code }}</p>
+    <p><strong>📅 تاریخ پرداخت:</strong> {{ paid_date }}</p>
+</div>
+
+{% if is_fully_paid %}
+<div style="background: #d4edda; border: 1px solid #28a745; padding: 15px; border-radius: 8px; text-align: center;">
+    <p style="color: #28a745; font-size: 18px;">🎉 فاکتور به طور کامل تسویه شد!</p>
+</div>
+{% else %}
+<p>💰 مبلغ باقی‌مانده: {{ remaining_amount }} ریال</p>
+{% endif %}
+{% endblock %}

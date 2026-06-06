@@ -1,0 +1,24 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}شارژ کیف پول - XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>💰 کیف پول شارژ شد</h1>
+
+<p>سلام {{ user_name }} عزیز،</p>
+
+<p>کیف پول شما با موفقیت شارژ شد:</p>
+
+<div class="highlight" style="border-right-color: #28a745;">
+    <p><strong>💰 مبلغ شارژ:</strong> {{ amount }} ریال</p>
+    <p><strong>🏦 روش پرداخت:</strong> {{ payment_method }}</p>
+    <p><strong>🔢 شماره تراکنش:</strong> {{ transaction_number }}</p>
+    <p><strong>📅 تاریخ:</strong> {{ charge_date }}</p>
+</div>
+
+<div style="text-align: center; margin: 20px 0;">
+    <a href="{{ wallet_url }}" class="btn">🔍 مشاهده کیف پول</a>
+</div>
+
+<p style="text-align: center;">موجودی فعلی کیف پول شما: <strong>{{ wallet_balance }} ریال</strong></p>
+{% endblock %}

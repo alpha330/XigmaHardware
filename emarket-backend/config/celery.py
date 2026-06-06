@@ -65,4 +65,8 @@ app.conf.beat_schedule = {
         'schedule': crontab(day_of_week=0, hour=1, minute=0),  # هر یکشنبه
         'kwargs': {'report_type': 'weekly'},
     },
+    'cancel-expired-invoices': {
+        'task': 'financial.cancel_expired_invoices',
+        'schedule': crontab(hour=1, minute=0),  # هر روز ساعت ۱ صبح
+    },
 }

@@ -1,0 +1,18 @@
+💰 کیف پول شارژ شد - XigmaHardware
+
+سلام {{ user_name }} عزیز،
+
+کیف پول شما با موفقیت شارژ شد:
+
+💰 مبلغ شارژ: {{ amount }} ریال
+🏦 روش پرداخت: {{ payment_method }}
+🔢 شماره تراکنش: {{ transaction_number }}
+📅 تاریخ: {{ charge_date }}
+
+موجودی فعلی کیف پول شما: {{ wallet_balance }} ریال
+
+مشاهده کیف پول: {{ wallet_url }}
+
+---
+XigmaHardware - قدرت سخت‌افزار، اعتماد شما
+© {% now "Y" %} XigmaHardware. تمامی حقوق محفوظ است.

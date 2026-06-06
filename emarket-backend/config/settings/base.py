@@ -33,8 +33,8 @@ LOCAL_APPS = [
     'apps.accounts',
     'apps.stock',
     # 'apps.market',
-    # 'apps.financial',
-    # 'apps.payment',
+    'apps.financial',
+    'apps.payment',
     'apps.basket',
 ]
 

@@ -1,0 +1,34 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}فاکتور نهایی - XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>✅ فاکتور نهایی صادر شد</h1>
+
+<p>سلام {{ user_name }} عزیز،</p>
+
+<p>فاکتور نهایی شما در XigmaHardware صادر گردید:</p>
+
+<div class="highlight" style="border-right-color: #28a745;">
+    <p><strong>🧾 شماره فاکتور:</strong> {{ invoice_number }}</p>
+    <p><strong>📅 تاریخ:</strong> {{ created_date }}</p>
+    <p><strong>💰 مبلغ کل:</strong> {{ total_amount }} ریال</p>
+    <p><strong>💳 مبلغ پرداختی:</strong> {{ paid_amount }} ریال</p>
+    <p><strong>📌 مبلغ باقی‌مانده:</strong> {{ remaining_amount }} ریال</p>
+    {% if payment_method %}
+    <p><strong>🏦 روش پرداخت:</strong> {{ payment_method }}</p>
+    {% endif %}
+</div>
+
+{% if is_paid %}
+<div style="background: #d4edda; border: 1px solid #28a745; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+    <p style="color: #28a745; font-size: 18px; margin: 0;">✅ پرداخت موفق - این فاکتور تسویه شده است</p>
+</div>
+{% else %}
+<div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+    <p style="color: #856404; margin: 0;">⚠️ این فاکتور هنوز به طور کامل پرداخت نشده است</p>
+</div>
+{% endif %}
+
+<a href="{{ invoice_url }}" class="btn">🔍 مشاهده و پرداخت فاکتور</a>
+{% endblock %}

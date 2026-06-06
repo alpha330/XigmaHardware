@@ -1,0 +1,29 @@
+📄 پیش‌فاکتور جدید - XigmaHardware
+
+سلام {{ user_name }} عزیز،
+
+پیش‌فاکتور جدیدی برای شما صادر شده است:
+
+📋 شماره: {{ invoice_number }}
+📅 تاریخ: {{ created_date }}
+💰 مبلغ کل: {{ total_amount }} ریال
+{% if payment_due_date %}
+⏳ مهلت پرداخت: {{ payment_due_date }}
+{% endif %}
+
+🛒 اقلام:
+{% for item in items %}
+  • {{ item.description }}
+    تعداد: {{ item.quantity }} | قیمت: {{ item.total_price }} ریال
+{% endfor %}
+
+مشاهده پیش‌فاکتور: {{ invoice_url }}
+
+⚠️ این یک پیش‌فاکتور است و هنوز نهایی نشده است.
+لطفاً جهت نهایی‌سازی و پرداخت با ما تماس بگیرید:
+📧 {{ support_email }}
+📱 ۰۲۱-۱۲۳۴۵۶۷۸
+
+---
+XigmaHardware - قدرت سخت‌افزار، اعتماد شما
+© {% now "Y" %} XigmaHardware. تمامی حقوق محفوظ است.

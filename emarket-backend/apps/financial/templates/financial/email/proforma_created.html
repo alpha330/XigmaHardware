@@ -1,0 +1,46 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}پیش‌فاکتور جدید - XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>📄 پیش‌فاکتور جدید</h1>
+
+<p>سلام {{ user_name }} عزیز،</p>
+
+<p>پیش‌فاکتور جدیدی برای شما در XigmaHardware صادر شده است:</p>
+
+<div class="highlight">
+    <p><strong>📋 شماره پیش‌فاکتور:</strong> {{ invoice_number }}</p>
+    <p><strong>📅 تاریخ:</strong> {{ created_date }}</p>
+    <p><strong>💰 مبلغ کل:</strong> {{ total_amount }} ریال</p>
+    {% if payment_due_date %}
+    <p><strong>⏳ مهلت پرداخت:</strong> {{ payment_due_date }}</p>
+    {% endif %}
+</div>
+
+{% if items %}
+<div class="highlight">
+    <p><strong>🛒 اقلام:</strong></p>
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr style="background: #f8f9fa;">
+            <th style="padding: 8px; text-align: right;">شرح</th>
+            <th style="padding: 8px; text-align: center;">تعداد</th>
+            <th style="padding: 8px; text-align: left;">قیمت</th>
+        </tr>
+        {% for item in items %}
+        <tr>
+            <td style="padding: 8px;">{{ item.description }}</td>
+            <td style="padding: 8px; text-align: center;">{{ item.quantity }}</td>
+            <td style="padding: 8px; text-align: left;">{{ item.total_price }} ریال</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+<a href="{{ invoice_url }}" class="btn">🔍 مشاهده پیش‌فاکتور</a>
+
+<p style="text-align: center; margin-top: 20px;">
+    لطفاً جهت نهایی‌سازی و پرداخت با ما تماس بگیرید.
+</p>
+{% endblock %}

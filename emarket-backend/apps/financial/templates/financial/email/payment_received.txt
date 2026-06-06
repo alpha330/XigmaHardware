@@ -1,0 +1,23 @@
+💳 پرداخت دریافت شد - XigmaHardware
+
+سلام {{ user_name }} عزیز،
+
+پرداخت شما با موفقیت دریافت شد:
+
+🧾 فاکتور: {{ invoice_number }}
+💰 مبلغ پرداختی: {{ paid_amount }} ریال
+🏦 روش پرداخت: {{ payment_method }}
+🔢 کد پیگیری: {{ reference_code }}
+📅 تاریخ پرداخت: {{ paid_date }}
+
+{% if is_fully_paid %}
+🎉 فاکتور به طور کامل تسویه شد!
+{% else %}
+💰 مبلغ باقی‌مانده: {{ remaining_amount }} ریال
+{% endif %}
+
+مشاهده فاکتور: {{ invoice_url }}
+
+---
+XigmaHardware - قدرت سخت‌افزار، اعتماد شما
+© {% now "Y" %} XigmaHardware. تمامی حقوق محفوظ است.
