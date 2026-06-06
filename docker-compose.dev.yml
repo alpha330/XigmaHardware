@@ -49,14 +49,10 @@ services:
     env_file:
       - .env.dev
     environment:
-      - DB_HOST=postgres
       - REDIS_HOST=redis
       - EMAIL_HOST=mailhog
       - EMAIL_PORT=1025
       - CELERY_BROKER_URL=redis://redis:6379/1
-      - DB_PASSWORD=postgres123@321
-      - DB_USER=postgres_admin
-      - DB_NAME=marketplace_dev
     depends_on:
       - postgres
       - redis
@@ -85,7 +81,6 @@ services:
     env_file:
       - .env.dev
     environment:
-      - DB_HOST=postgres
       - REDIS_HOST=redis
       - EMAIL_HOST=mailhog
       - CELERY_BROKER_URL=redis://redis:6379/1
@@ -109,7 +104,6 @@ services:
     env_file:
       - .env.dev
     environment:
-      - DB_HOST=postgres
       - REDIS_HOST=redis
       - CELERY_BROKER_URL=redis://redis:6379/1
     depends_on:

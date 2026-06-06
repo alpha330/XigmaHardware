@@ -32,7 +32,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     'apps.accounts',
     'apps.stock',
-    # 'apps.market',
+    'apps.market',
     'apps.financial',
     'apps.payment',
     'apps.basket',
