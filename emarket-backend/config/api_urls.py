@@ -43,5 +43,5 @@ urlpatterns = [
     path('payment/', include('apps.payment.urls', namespace='payment')),
     path('logistics/', include('apps.logistics.urls', namespace='logistics')),
     path('support/', include('apps.support.urls', namespace='support')),
-    # path('website/', include('apps.website.urls', namespace='website')),
+    path('website/', include('apps.website.urls', namespace='website')),
 ]

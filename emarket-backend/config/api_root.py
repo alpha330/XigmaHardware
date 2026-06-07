@@ -126,27 +126,27 @@ def api_root(request, format=None):
                     'search': request.build_absolute_uri('/api/v1/support/faqs/?search=keyword'),
                 },
             },
-            # 'website': {
-            #     'base': request.build_absolute_uri('/api/v1/website/'),
-            #     'description': '🌐 Website pages, articles, news, contact',
-            #     'pages': {
-            #         'about': request.build_absolute_uri('/api/v1/website/pages/?type=about'),
-            #         'terms': request.build_absolute_uri('/api/v1/website/pages/?type=terms'),
-            #         'privacy': request.build_absolute_uri('/api/v1/website/pages/?type=privacy'),
-            #     },
-            #     'articles': {
-            #         'list': request.build_absolute_uri('/api/v1/website/articles/'),
-            #         'featured': request.build_absolute_uri('/api/v1/website/articles/?status=published'),
-            #     },
-            #     'news': {
-            #         'list': request.build_absolute_uri('/api/v1/website/news/'),
-            #         'pinned': request.build_absolute_uri('/api/v1/website/news/?status=pinned'),
-            #     },
-            #     'contact': {
-            #         'send': request.build_absolute_uri('/api/v1/website/contact/'),
-            #         'newsletter': request.build_absolute_uri('/api/v1/website/newsletter/subscribe/'),
-            #     },
-            # },
+            'website': {
+                'base': request.build_absolute_uri('/api/v1/website/'),
+                'description': '🌐 Website pages, articles, news, contact',
+                'pages': {
+                    'about': request.build_absolute_uri('/api/v1/website/pages/?type=about'),
+                    'terms': request.build_absolute_uri('/api/v1/website/pages/?type=terms'),
+                    'privacy': request.build_absolute_uri('/api/v1/website/pages/?type=privacy'),
+                },
+                'articles': {
+                    'list': request.build_absolute_uri('/api/v1/website/articles/'),
+                    'featured': request.build_absolute_uri('/api/v1/website/articles/?status=published'),
+                },
+                'news': {
+                    'list': request.build_absolute_uri('/api/v1/website/news/'),
+                    'pinned': request.build_absolute_uri('/api/v1/website/news/?status=pinned'),
+                },
+                'contact': {
+                    'send': request.build_absolute_uri('/api/v1/website/contact/'),
+                    'newsletter': request.build_absolute_uri('/api/v1/website/newsletter/subscribe/'),
+                },
+            },
         },
         'authentication': {
             'type': 'JWT (JSON Web Token)',
