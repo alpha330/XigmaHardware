@@ -1,0 +1,14 @@
+🔄 وضعیت تیکت {{ ticket_number }} تغییر کرد
+
+سلام {{ user_name }} عزیز،
+
+وضعیت تیکت شما تغییر کرد:
+
+📋 موضوع: {{ subject }}
+🔄 از: {{ old_status }}
+➡️ به: {{ new_status_display }}
+
+مشاهده: {{ ticket_url }}
+
+---
+XigmaHardware

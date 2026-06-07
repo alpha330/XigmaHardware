@@ -1,0 +1,25 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}محموله تحویل داده شد - XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>✅ محموله با موفقیت تحویل داده شد</h1>
+
+<p>سلام {{ user_name }} عزیز،</p>
+
+<p>محموله شما با موفقیت به {{ recipient_name }} تحویل داده شد:</p>
+
+<div class="highlight" style="border-right-color: #28a745;">
+    <p><strong>📦 محموله:</strong> #{{ shipment_id }}</p>
+    <p><strong>📅 تاریخ تحویل:</strong> {{ date }}</p>
+    <p><strong>📍 آدرس:</strong> {{ destination }}</p>
+</div>
+
+<div style="background: #d4edda; border: 1px solid #28a745; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
+    <p style="color: #28a745; font-size: 18px; margin: 0;">🎉 از خرید شما متشکریم!</p>
+</div>
+
+<p>لطفاً با ثبت نظر خود، به بهبود خدمات ما کمک کنید.</p>
+
+<a href="{{ site_url }}/reviews/" class="btn">⭐ ثبت نظر</a>
+{% endblock %}

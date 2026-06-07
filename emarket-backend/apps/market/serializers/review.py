@@ -23,6 +23,7 @@ class ReviewListSerializer(serializers.ModelSerializer):
     pros_list = serializers.SerializerMethodField()
     cons_list = serializers.SerializerMethodField()
     rating_overall = serializers.SerializerMethodField()
+    body_short = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductReview
@@ -58,9 +59,11 @@ class ReviewListSerializer(serializers.ModelSerializer):
             return obj.rating.overall
         return None
 
-    @property
-    def body_short(self):
-        return self.body[:200] + '...' if len(self.body) > 200 else self.body
+    def get_body_short(self, obj):
+       """متن کوتاه شده کامنت"""
+       if obj.body:
+           return obj.body[:100] + '...' if len(obj.body) > 100 else obj.body
+       return ''
 
 
 class ReviewSerializer(serializers.ModelSerializer):

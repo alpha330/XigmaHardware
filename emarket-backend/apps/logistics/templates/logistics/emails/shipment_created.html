@@ -1,0 +1,24 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}محموله جدید - XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>📦 محموله جدید ثبت شد</h1>
+
+<p>سلام {{ user_name }} عزیز،</p>
+
+<p>محموله شما با موفقیت ثبت شد و به زودی ارسال خواهد شد:</p>
+
+<div class="highlight">
+    <p><strong>🔢 شماره پیگیری:</strong> {{ tracking_code }}</p>
+    <p><strong>📅 تاریخ ثبت:</strong> {{ date }}</p>
+    <p><strong>🏭 مبدا:</strong> {{ origin }}</p>
+    <p><strong>📍 مقصد:</strong> {{ destination }}</p>
+    <p><strong>👤 تحویل گیرنده:</strong> {{ recipient_name }}</p>
+    <p><strong>⏱️ زمان تخمینی تحویل:</strong> {{ estimated_delivery }}</p>
+</div>
+
+<p>به محض اینکه پیک محموله شما را تحویل بگیرد، به شما اطلاع خواهیم داد.</p>
+
+<a href="{{ tracking_url }}" class="btn">🔍 پیگیری محموله</a>
+{% endblock %}

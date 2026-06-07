@@ -1,0 +1,17 @@
+❌ ارسال لغو شد - XigmaHardware
+
+سلام {{ user_name }} عزیز،
+
+متأسفانه محموله #{{ shipment_id }} لغو گردید:
+
+📅 تاریخ لغو: {{ date }}
+📍 مقصد: {{ destination }}
+
+در صورت نیاز به اطلاعات بیشتر، لطفاً با پشتیبانی تماس بگیرید:
+📧 {{ support_email }}
+
+مشاهده سفارش: {{ site_url }}/orders/
+
+---
+XigmaHardware
+📧 {{ support_email }}

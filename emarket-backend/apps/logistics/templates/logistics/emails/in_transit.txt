@@ -1,0 +1,19 @@
+🛵 محموله در مسیر - XigmaHardware
+
+سلام {{ user_name }} عزیز،
+
+محموله شما در مسیر رسیدن به دست شماست:
+
+🛵 پیک: {{ courier_name }}
+📱 تماس با پیک: {{ courier_phone }}
+📏 مسافت طی شده: {{ distance_km }} کیلومتر
+⏱️ زمان تخمینی باقی‌مانده: {{ estimated_delivery }}
+📍 مقصد: {{ destination }}
+
+پیک در حال نزدیک شدن به آدرس شماست.
+
+پیگیری لحظه‌ای: {{ tracking_url }}
+
+---
+XigmaHardware
+📧 {{ support_email }}

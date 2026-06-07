@@ -1,0 +1,22 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}محموله تحویل پیک شد - XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>📦 محموله تحویل پیک شد</h1>
+
+<p>سلام {{ user_name }} عزیز،</p>
+
+<p>پیک محموله شما را از انبار تحویل گرفت و در حال حرکت به سمت شماست:</p>
+
+<div class="highlight" style="border-right-color: #6f42c1;">
+    <p><strong>🛵 پیک:</strong> {{ courier_name }}</p>
+    <p><strong>📱 تماس با پیک:</strong> {{ courier_phone }}</p>
+    <p><strong>📏 مسافت:</strong> {{ distance_km }} کیلومتر</p>
+    <p><strong>⏱️ زمان تخمینی:</strong> {{ estimated_delivery }}</p>
+</div>
+
+<p>پیک تا دقایقی دیگر به آدرس شما خواهد رسید.</p>
+
+<a href="{{ tracking_url }}" class="btn">📍 پیگیری روی نقشه</a>
+{% endblock %}

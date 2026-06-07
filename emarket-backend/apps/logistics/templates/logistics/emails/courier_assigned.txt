@@ -1,0 +1,18 @@
+🚀 پیک تخصیص داده شد - XigmaHardware
+
+سلام {{ user_name }} عزیز،
+
+پیک برای ارسال محموله شما تخصیص داده شد:
+
+🛵 پیک: {{ courier_name }}
+📱 تماس با پیک: {{ courier_phone }}
+🔢 کد پیگیری: {{ tracking_code }}
+📍 مقصد: {{ destination }}
+
+پیک به زودی برای تحویل محموله شما اقدام خواهد کرد.
+
+پیگیری لحظه‌ای: {{ tracking_url }}
+
+---
+XigmaHardware - قدرت سخت‌افزار، اعتماد شما
+📧 {{ support_email }}

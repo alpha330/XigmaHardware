@@ -1,0 +1,16 @@
+📩 پاسخ جدید - تیکت {{ ticket_number }}
+
+سلام {{ user_name }} عزیز،
+
+پاسخ جدیدی برای تیکت شما ثبت شد:
+
+🎧 پاسخ از: {{ replier_name }}
+📅 تاریخ: {{ date }}
+
+📝 متن پاسخ:
+{{ reply_body }}
+
+مشاهده و پاسخ: {{ ticket_url }}
+
+---
+XigmaHardware

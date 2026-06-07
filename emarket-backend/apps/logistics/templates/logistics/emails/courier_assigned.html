@@ -1,0 +1,20 @@
+{% extends "accounts/emails/base.html" %}
+
+{% block title %}پیک تخصیص داده شد - XigmaHardware{% endblock %}
+
+{% block content %}
+<h1>🚀 پیک تخصیص داده شد</h1>
+
+<p>سلام {{ user_name }} عزیز،</p>
+
+<p>پیک برای ارسال محموله شما تخصیص داده شد:</p>
+
+<div class="highlight" style="border-right-color: #17a2b8;">
+    <p><strong>🛵 پیک:</strong> {{ courier_name }}</p>
+    <p><strong>📱 تماس:</strong> {{ courier_phone }}</p>
+    <p><strong>🔢 کد پیگیری:</strong> {{ tracking_code }}</p>
+    <p><strong>📍 مقصد:</strong> {{ destination }}</p>
+</div>
+
+<a href="{{ tracking_url }}" class="btn">🔍 پیگیری لحظه‌ای</a>
+{% endblock %}

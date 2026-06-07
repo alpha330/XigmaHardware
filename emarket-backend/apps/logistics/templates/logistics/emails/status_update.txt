@@ -1,0 +1,19 @@
+📦 بروزرسانی وضعیت ارسال - XigmaHardware
+
+سلام {{ user_name }} عزیز،
+
+وضعیت محموله #{{ shipment_id }} بروزرسانی شد:
+
+وضعیت جدید: {{ status_display }}
+📅 تاریخ: {{ date }}
+
+{% if courier_name %}
+🛵 پیک: {{ courier_name }}
+📱 تماس: {{ courier_phone }}
+{% endif %}
+
+پیگیری: {{ tracking_url }}
+
+---
+XigmaHardware
+📧 {{ support_email }}

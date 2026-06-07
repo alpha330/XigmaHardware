@@ -57,11 +57,11 @@ class CommentListSerializer(serializers.ModelSerializer):
             return f'{diff.seconds // 60} minutes ago'
         return 'Just now'
 
-    @property
-    def body_short(self):
-        if hasattr(self, 'body') and self.body:
-            return self.body[:100] + '...' if len(self.body) > 100 else self.body
-        return ''
+    def get_body_short(self, obj):
+       """متن کوتاه شده کامنت"""
+       if obj.body:
+           return obj.body[:100] + '...' if len(obj.body) > 100 else obj.body
+       return ''
 
 
 class CommentSerializer(serializers.ModelSerializer):
