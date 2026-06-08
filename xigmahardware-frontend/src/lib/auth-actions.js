@@ -107,3 +107,15 @@ export async function checkAuth() {
   const user = await getUserFromCookies();
   return { authenticated: true, user };
 }
+
+export async function getUserRole() {
+  const user = await getUserFromCookies();
+  return user?.role || 'client';
+}
+
+export async function canAccess(requiredRoles = []) {
+  const user = await getUserFromCookies();
+  if (!user) return false;
+  if (user.role === 'super_admin') return true;
+  return requiredRoles.includes(user.role);
+}

@@ -10,93 +10,101 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 const SliderWrapper = styled.div`
   position: relative;
   width: 100%;
-  height: 500px;
+  height: 480px;
   overflow: hidden;
-  margin-top: 120px;
+  margin-top: 72px;
 
-  @media (max-width: 768px) {
-    height: 350px;
-    margin-top: 100px;
-  }
+  @media (max-width: 768px) { height: 350px; }
+  @media (max-width: 480px) { height: 280px; }
 `;
 
 const Slide = styled.div`
   position: absolute;
   inset: 0;
-  opacity: ${props => props.$active ? 1 : 0};
-  transform: translateX(${props => props.$active ? '0' : props.$direction === 'left' ? '-100%' : '100%'});
+  opacity: ${p => p.$active ? 1 : 0};
+  transform: translateX(${p => p.$active ? '0' : p.$dir === 'left' ? '-100%' : '100%'});
   transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg,
-    ${props => props.$color1 || props.theme.colors.primary[800]},
-    ${props => props.$color2 || props.theme.colors.primary[600]}
-  );
+  background: linear-gradient(135deg, ${p => p.$from}, ${p => p.$to});
   display: flex;
   align-items: center;
   padding: 0 80px;
 
-  @media (max-width: 768px) {
-    padding: 0 40px;
-  }
+  @media (max-width: 768px) { padding: 0 40px; }
 `;
 
 const SlideContent = styled.div`
   flex: 1;
   color: white;
-  animation: ${props => props.$active ? 'slideUp 0.6s ease-out' : 'none'};
+  animation: ${p => p.$active ? 'fadeInUp 0.6s ease-out 0.2s both' : 'none'};
+`;
+
+const SlideTag = styled.span`
+  display: inline-block;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 16px;
 `;
 
 const SlideTitle = styled.h2`
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   font-weight: 800;
-  margin-bottom: 16px;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  line-height: 1.2;
+  margin-bottom: 12px;
+  letter-spacing: -1px;
 
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
-  }
+  @media (max-width: 768px) { font-size: 1.6rem; }
 `;
 
-const SlideSubtitle = styled.p`
-  font-size: 1.2rem;
-  opacity: 0.9;
+const SlideDesc = styled.p`
+  font-size: 1.1rem;
+  opacity: 0.85;
   margin-bottom: 24px;
-  max-width: 500px;
+  max-width: 480px;
+  line-height: 1.7;
+
+  @media (max-width: 768px) { font-size: 0.95rem; }
 `;
 
-const SlideImage = styled.div`
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 12rem;
-  opacity: 0.8;
-  animation: ${props => props.$active ? 'fadeIn 0.8s ease-out' : 'none'};
+const SlideEmoji = styled.div`
+  font-size: 10rem;
+  opacity: 0.7;
+  animation: ${p => p.$active ? 'fadeIn 0.8s ease-out 0.4s both' : 'none'};
 
-  @media (max-width: 768px) {
-    display: none;
-  }
+  @media (max-width: 768px) { display: none; }
 `;
 
-const NavButton = styled.button`
+const NavBtn = styled.button`
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  ${props => props.$side === 'left' ? 'left: 20px;' : 'right: 20px;'}
-  width: 50px;
-  height: 50px;
+  ${p => p.$side === 'left' ? 'left: 20px;' : 'right: 20px;'}
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  border: none;
-  background: rgba(255,255,255,0.2);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
   color: white;
   cursor: pointer;
-  font-size: 1.2rem;
-  transition: all 0.3s;
-  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 5;
 
   &:hover {
-    background: rgba(255,255,255,0.4);
-    transform: translateY(-50%) scale(1.1);
+    background: rgba(255,255,255,0.25);
+    transform: translateY(-50%) scale(1.05);
+  }
+
+  @media (max-width: 768px) {
+    width: 36px; height: 36px;
+    ${p => p.$side === 'left' ? 'left: 8px;' : 'right: 8px;'}
   }
 `;
 
@@ -106,118 +114,91 @@ const Dots = styled.div`
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 10px;
-  z-index: 10;
+  gap: 8px;
+  z-index: 5;
 `;
 
 const Dot = styled.button`
-  width: ${props => props.$active ? '32px' : '10px'};
-  height: 10px;
-  border-radius: 5px;
+  width: ${p => p.$active ? 28 : 8}px;
+  height: 8px;
+  border-radius: 4px;
   border: none;
-  background: ${props => props.$active ? 'white' : 'rgba(255,255,255,0.4)'};
+  background: ${p => p.$active ? 'white' : 'rgba(255,255,255,0.35)'};
   cursor: pointer;
   transition: all 0.3s;
 `;
 
 const slides = [
   {
-    title: 'سرورهای HP ProLiant G10',
-    subtitle: 'قدرت پردازش بی‌نظیر برای دیتاسنتر شما | با گارانتی ۳ ساله',
-    color1: '#1a1a2e',
-    color2: '#6b21a8',
+    tag: '🆕 ورود جدید',
+    title: 'سرورهای HP ProLiant Gen11',
+    desc: 'قدرت پردازش نسل جدید با Intel Xeon Scalable | گارانتی ۳ ساله XigmaHardware',
     emoji: '🖥️',
-    link: '/products/hp-proliant-g10',
+    from: '#0f172a', to: '#5b21b6',
+    link: '/products/hp-proliant-gen11',
   },
   {
-    title: 'تخفیف ویژه Workstation',
-    subtitle: 'تا ۳۰٪ تخفیف برای workstation های Dell Precision',
-    color1: '#0f172a',
-    color2: '#7e22ce',
+    tag: '🔥 تخفیف ویژه',
+    title: 'تا ۳۰٪ تخفیف Workstation',
+    desc: 'Dell Precision با پردازنده‌های Xeon و حافظه ECC',
     emoji: '💻',
-    link: '/products/workstation',
+    from: '#1e293b', to: '#6d28d9',
+    link: '/products/workstations',
   },
   {
+    tag: '🌟 پرفروش',
     title: 'تجهیزات شبکه Cisco',
-    subtitle: 'سوئیچ‌ها و روترهای سازمانی با بهترین قیمت',
-    color1: '#1e293b',
-    color2: '#4338ca',
+    desc: 'سوئیچ‌ها و روترهای سازمانی با گارانتی معتبر',
     emoji: '🌐',
-    link: '/products/network',
+    from: '#0f172a', to: '#4338ca',
+    link: '/products/networking',
   },
   {
-    title: 'ذخیره‌سازهای QNAP',
-    subtitle: 'راه‌حل‌های ذخیره‌سازی NAS برای سازمان شما',
-    color1: '#1a1a2e',
-    color2: '#059669',
+    tag: '💾 جدید',
+    title: 'ذخیره‌سازهای NVMe',
+    desc: 'SSD های سازمانی با سرعت ۷GB/s',
     emoji: '💾',
+    from: '#1e293b', to: '#059669',
     link: '/products/storage',
   },
 ];
 
 export const HeroSlider = () => {
   const [current, setCurrent] = useState(0);
-  const [direction, setDirection] = useState('right');
-  const timerRef = useRef(null);
+  const [dir, setDir] = useState('right');
+  const timer = useRef(null);
 
-  const goTo = useCallback((index, dir = 'right') => {
-    setDirection(dir);
-    setCurrent(index);
-  }, []);
+  const go = useCallback((i, d = 'right') => { setDir(d); setCurrent(i); }, []);
+  const next = useCallback(() => { setDir('right'); setCurrent(p => (p + 1) % slides.length); }, []);
+  const prev = useCallback(() => { setDir('left'); setCurrent(p => (p - 1 + slides.length) % slides.length); }, []);
 
-  const next = useCallback(() => {
-    setDirection('right');
-    setCurrent(prev => (prev + 1) % slides.length);
-  }, []);
-
-  const prev = useCallback(() => {
-    setDirection('left');
-    setCurrent(prev => (prev - 1 + slides.length) % slides.length);
-  }, []);
-
-  // Autoplay
   useEffect(() => {
-    timerRef.current = setInterval(next, 5000);
-    return () => clearInterval(timerRef.current);
+    timer.current = setInterval(next, 5000);
+    return () => clearInterval(timer.current);
   }, [next]);
 
   return (
     <SliderWrapper>
-      {slides.map((slide, index) => (
-        <Slide
-          key={index}
-          $active={index === current}
-          $direction={direction}
-          $color1={slide.color1}
-          $color2={slide.color2}
-        >
-          <SlideContent $active={index === current}>
-            <SlideTitle>{slide.title}</SlideTitle>
-            <SlideSubtitle>{slide.subtitle}</SlideSubtitle>
-            <Button variant="secondary" size="lg" onClick={() => window.location.href = slide.link}>
-              مشاهده محصولات
+      {slides.map((s, i) => (
+        <Slide key={i} $active={i === current} $dir={dir} $from={s.from} $to={s.to}>
+          <SlideContent $active={i === current}>
+            <SlideTag>{s.tag}</SlideTag>
+            <SlideTitle>{s.title}</SlideTitle>
+            <SlideDesc>{s.desc}</SlideDesc>
+            <Button variant="secondary" size="lg" onClick={() => window.location.href = s.link}>
+              مشاهده و خرید
             </Button>
           </SlideContent>
-          <SlideImage $active={index === current}>
-            {slide.emoji}
-          </SlideImage>
+          <SlideEmoji $active={i === current}>{s.emoji}</SlideEmoji>
         </Slide>
       ))}
 
-      <NavButton $side="left" onClick={prev}>
-        <Icon icon={faChevronRight} size="lg" />
-      </NavButton>
-      <NavButton $side="right" onClick={next}>
-        <Icon icon={faChevronLeft} size="lg" />
-      </NavButton>
+      <NavBtn $side="left" onClick={prev}><Icon icon={faChevronRight} size="lg" /></NavBtn>
+      <NavBtn $side="right" onClick={next}><Icon icon={faChevronLeft} size="lg" /></NavBtn>
 
       <Dots>
-        {slides.map((_, index) => (
-          <Dot
-            key={index}
-            $active={index === current}
-            onClick={() => goTo(index)}
-          />
+        {slides.map((_, i) => (
+          <Dot key={i} $active={i === current} onClick={() => go(i)} />
         ))}
       </Dots>
     </SliderWrapper>
