@@ -112,7 +112,7 @@ def send_verification_email(self, user_id):
         token = AuthService.generate_email_token(user)
 
         # لینک تایید
-        verification_url = f"{getattr(settings, 'SITE_URL', 'http://localhost:8000')}/api/v1/accounts/auth/verify/email/{token}/"
+        verification_url = f"{getattr(settings, 'SITE_URL', 'http://localhost:3000')}/auth/verify-email/{token}/"
 
         context = {
             'user': user,
