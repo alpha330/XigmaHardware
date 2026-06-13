@@ -1,81 +1,31 @@
-// src/lib/ThemeContext.js
 'use client';
-
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { ThemeProvider as EmotionThemeProvider } from '@emotion/react';
-import { lightTheme, darkTheme } from '@/styles/theme';
+import { lightTheme, darkTheme } from './theme';
 
-const ThemeModeContext = createContext(null);
+const ThemeContext = createContext();
 
-export const useThemeMode = () => {
-  const context = useContext(ThemeModeContext);
-  // ✅ فقط warning به جای throw
-  if (!context) {
-    if (typeof window !== 'undefined') {
-      console.warn('useThemeMode must be used within ThemeModeProvider');
-    }
-    return {
-      mode: 'light',
-      toggleTheme: () => {},
-      isDark: false,
-      isLight: true,
-      setLightTheme: () => {},
-      setDarkTheme: () => {},
-    };
-  }
-  return context;
-};
+export const useThemeMode = () => useContext(ThemeContext);
 
-export const ThemeModeProvider = ({ children }) => {
-  const [mode, setMode] = useState('light');
-  const [mounted, setMounted] = useState(false);
+export const ThemeProvider = ({ children }) => {
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('xigma-theme-mode');
-      if (saved) {
-        setMode(saved);
-      } else {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setMode(prefersDark ? 'dark' : 'light');
-      }
-    } catch {
-      // localStorage در دسترس نیست
-    }
-    setMounted(true);
+    const stored = localStorage.getItem('theme');
+    setIsDark(stored === 'dark');
   }, []);
 
-  useEffect(() => {
-    if (mounted) {
-      try {
-        localStorage.setItem('xigma-theme-mode', mode);
-      } catch {}
-    }
-  }, [mode, mounted]);
+  const toggleTheme = () => {
+    const newMode = !isDark;
+    setIsDark(newMode);
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+  };
 
-  const toggleTheme = useCallback(() => {
-    setMode(prev => prev === 'light' ? 'dark' : 'light');
-  }, []);
-
-  const setLightTheme = useCallback(() => setMode('light'), []);
-  const setDarkTheme = useCallback(() => setMode('dark'), []);
-
-  const currentTheme = mode === 'dark' ? darkTheme : lightTheme;
+  const theme = isDark ? darkTheme : lightTheme;
 
   return (
-    <ThemeModeContext.Provider
-      value={{
-        mode,
-        toggleTheme,
-        setLightTheme,
-        setDarkTheme,
-        isDark: mode === 'dark',
-        isLight: mode === 'light',
-      }}
-    >
-      <EmotionThemeProvider theme={currentTheme}>
-        {children}
-      </EmotionThemeProvider>
-    </ThemeModeContext.Provider>
+    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+      <EmotionThemeProvider theme={theme}>{children}</EmotionThemeProvider>
+    </ThemeContext.Provider>
   );
 };

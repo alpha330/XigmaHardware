@@ -1,37 +1,35 @@
-// src/app/layout.js
-'use client';
+import { ThemeProvider } from '@/lib/ThemeContext';
+import { GlobalStyles } from '@/styles/global';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+import ToastProvider from '@/components/layout/ToastProvider';
 
-import { Global, useTheme } from '@emotion/react';
-import { globalStyles } from '@/styles/global';
-import { ThemeModeProvider, useThemeMode } from '@/lib/ThemeContext';
-import { ToastProvider } from '@/components/ui/Toast';
-import '@/lib/fontawesome';
-
-// ✅ همه چی توی Provider باشه
-function LayoutContent({ children }) {
-  const theme = useTheme();
-  return (
-    <>
-      <Global styles={globalStyles(theme)} />
-      {children}
-    </>
-  );
-}
+export const metadata = {
+  title: 'XigmaHardware - فروشگاه سخت‌افزار',
+  description: 'مرجع تخصصی خرید قطعات سرور، تجهیزات شبکه و قطعات کامپیوتر',
+  keywords: 'سرور, قطعات کامپیوتر, Xigma, خرید سرور',
+  openGraph: {
+    title: 'XigmaHardware',
+    description: 'فروشگاه آنلاین سخت‌افزار',
+    url: 'https://xigmahardware.com',
+    siteName: 'XigmaHardware',
+    locale: 'fa_IR',
+    type: 'website',
+  },
+};
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="fa" dir="rtl" suppressHydrationWarning>
-      <head>
-        <title>XigmaHardware</title>
-        <meta name="description" content="marketplace سخت‌افزارهای سازمانی" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </head>
+    <html lang="fa" dir="rtl">
       <body>
-        <ThemeModeProvider>
+        <ThemeProvider>
+          <GlobalStyles />
           <ToastProvider>
-            <LayoutContent>{children}</LayoutContent>
+            <Header />
+            <main style={{ minHeight: '80vh' }}>{children}</main>
+            <Footer />
           </ToastProvider>
-        </ThemeModeProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
