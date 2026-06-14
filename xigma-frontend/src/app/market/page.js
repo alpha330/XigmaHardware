@@ -1,6 +1,6 @@
 // src/app/market/page.js
 import MarketClient from '../../components/market/MarketClient';
-
+import { apiFetch } from '../../utils/apiFetch';
 // این صفحه چون دارای فیلترهای داینامیک است، نباید کش ثابت شود
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +17,11 @@ async function getProducts(searchParams) {
     // تبدیل آبجکت پارامترها به Query String (مثل ?category=1)
     const queryString = new URLSearchParams(searchParams).toString();
     const endpoint = queryString
-      ? `http://localhost:8000/api/v1/market/products/?${queryString}`
-      : `http://localhost:8000/api/v1/market/products/`;
+      ? `/api/v1/market/products/?${queryString}`
+      : `/api/v1/market/products/`;
 
-    const res = await fetch(endpoint, { cache: 'no-store' });
+    const res = await apiFetch(endpoint, { cache: 'no-store' });
+    console.log('Fetching products from:', res);
     if (!res.ok) throw new Error('Failed to fetch products');
 
     const data = await res.json();
@@ -40,7 +41,7 @@ async function getProducts(searchParams) {
 // دریافت لیست دسته‌بندی‌ها (از اندپوینتی که در داکیومنت دادید)
 async function getCategories() {
   try {
-    const res = await fetch('http://localhost:8000/api/v1/stock/categories/', {
+    const res = await apiFetch('/api/v1/stock/categories/', {
       next: { revalidate: 3600 } // دسته‌بندی‌ها دیر به دیر عوض می‌شوند
     });
     if (!res.ok) throw new Error('Failed to fetch categories');
