@@ -9,6 +9,7 @@ import {
 } from './AuthStyles'; // AlertMessage حذف شد
 import Link from 'next/link';
 import { useToast } from '../ui/ToastProvider';
+import { apiFetch } from '../../utils/apiFetch';
 
 export default function ForgotClient() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function ForgotClient() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/accounts/auth/password/reset/', {
+      const res = await apiFetch('/api/v1/accounts/auth/password/reset/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email_or_mobile: identity })
@@ -58,7 +59,7 @@ export default function ForgotClient() {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/accounts/auth/password/reset/confirm/', {
+      const res = await apiFetch('/api/v1/accounts/auth/password/reset/confirm/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

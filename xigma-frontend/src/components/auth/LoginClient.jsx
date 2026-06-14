@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AuthContainer, AuthCard, AuthTitle, AuthSubtitle, InputGroup, Label, Input, SubmitButton, BottomLink } from './AuthStyles';
 import { useToast } from '../ui/ToastProvider'; // ایمپورت هوک
+import Cookies from 'js-cookie';
+import { apiFetch } from '../../utils/apiFetch';
 
 export default function LoginClient() {
   const router = useRouter();
@@ -18,23 +20,35 @@ export default function LoginClient() {
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/accounts/auth/login/', {
+      const res = await apiFetch('/api/v1/accounts/auth/login/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
 
       const data = await res.json();
+
       if (!res.ok) throw new Error(data.detail || 'ایمیل یا رمز عبور اشتباه است.');
 
-      localStorage.setItem('token', data.access);
-      localStorage.setItem('refresh', data.refresh);
+      // 🎯 اصلاح مسیر دریافت توکن‌ها بر اساس لاگ شما
+      const accessToken = data.tokens?.access;
+      const refreshToken = data.tokens?.refresh;
 
-      showToast('با موفقیت وارد شدید! خوش آمدید.', 'success'); // نمایش Toast موفقیت
+      if (!accessToken) {
+        throw new Error('توکن در پاسخ سرور یافت نشد!');
+      }
+
+      // ذخیره کوکی‌ها با مقادیر صحیح
+      Cookies.set('token', accessToken, { expires: 1 / 24, path: '/' });
+      if (refreshToken) {
+        Cookies.set('refresh', refreshToken, { expires: 7, path: '/' });
+      }
+
+      showToast('با موفقیت وارد شدید! خوش آمدید.', 'success');
       setTimeout(() => router.push('/accounts/profile'), 1500);
 
     } catch (error) {
-      showToast(error.message, 'error'); // نمایش Toast ارور
+      showToast(error.message, 'error');
     } finally {
       setLoading(false);
     }

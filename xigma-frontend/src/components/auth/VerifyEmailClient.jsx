@@ -7,6 +7,7 @@ import {
   AuthContainer, AuthCard, AuthTitle, AuthSubtitle, SubmitButton
 } from './AuthStyles';
 import { useToast } from '../ui/ToastProvider';
+import { apiFetch } from '../../utils/apiFetch';
 
 export default function VerifyEmailClient({ token }) {
   const { showToast } = useToast();
@@ -22,7 +23,7 @@ export default function VerifyEmailClient({ token }) {
       try {
         // ارسال درخواست GET (یا POST بسته به تنظیمات Django) به بک‌اند
         // معمولاً لینک‌های تایید ایمیل در جنگو با GET کار می‌کنند
-        const res = await fetch(`http://localhost:8000/api/v1/accounts/auth/verify/email/${token}/`, {
+        const res = await apiFetch(`/api/v1/accounts/auth/verify/email/${token}/`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

@@ -24,7 +24,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
     completion_percentage = serializers.SerializerMethodField()
     missing_fields = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Profile
         fields = [
@@ -37,13 +37,13 @@ class ProfileSerializer(serializers.ModelSerializer):
             'company_name', 'national_id', 'economic_code',
             # Status
             'is_completed', 'completion_percentage', 'missing_fields',
-            'created_at', 'updated_at',
+            'created_at', 'updated_at'
         ]
         read_only_fields = [
             'id', 'user', 'is_completed',
             'created_at', 'updated_at',
         ]
-    
+
     def get_profile_type_display(self, obj):
         """نمایش نوع پروفایل"""
         if obj.is_individual:
@@ -57,7 +57,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             'label': _('Legal/Company'),
             'icon': '🏢',
         }
-    
+
     def get_avatar_url(self, obj):
         """URL آواتار"""
         if obj.avatar:
@@ -66,12 +66,12 @@ class ProfileSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.avatar.url)
             return obj.avatar.url
         return None
-    
+
     def get_completion_percentage(self, obj):
         """درصد تکمیل"""
         from apps.accounts.services.profile_service import ProfileService
         return ProfileService.calculate_completion_percentage(obj)
-    
+
     def get_missing_fields(self, obj):
         """فیلدهای تکمیل نشده"""
         from apps.accounts.services.profile_service import ProfileService
@@ -82,20 +82,21 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     """
     سریالایزر به‌روزرسانی پروفایل
     """
-    
+
     class Meta:
         model = Profile
         fields = [
             'avatar', 'birth_date',
             'tel', 'address', 'postal_code',
+            'national_code', 'company_name', 'national_id', 'economic_code'
         ]
-    
+
     def validate_postal_code(self, value):
         """اعتبارسنجی کد پستی"""
         if value:
             validate_postal_code(value)
         return value
-    
+
     def validate_avatar(self, value):
         """اعتبارسنجی آواتار"""
         if value:
@@ -104,14 +105,14 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     _('Avatar size must be less than 5MB.')
                 )
-            
+
             # محدودیت فرمت
             allowed_types = ['image/jpeg', 'image/png', 'image/webp']
             if value.content_type not in allowed_types:
                 raise serializers.ValidationError(
                     _('Avatar must be JPEG, PNG, or WebP format.')
                 )
-        
+
         return value
 
 
@@ -143,29 +144,29 @@ class ProfileSwitchToLegalSerializer(serializers.Serializer):
             'required': _('Economic code is required.'),
         }
     )
-    
+
     def validate_national_id(self, value):
         """اعتبارسنجی شناسه ملی"""
         validate_national_id(value)
-        
+
         # بررسی یکتایی
         if Profile.objects.filter(national_id=value).exists():
             raise serializers.ValidationError(
                 _('This national ID is already registered.')
             )
-        
+
         return value
-    
+
     def validate_economic_code(self, value):
         """اعتبارسنجی کد اقتصادی"""
         validate_economic_code(value)
-        
+
         # بررسی یکتایی
         if Profile.objects.filter(economic_code=value).exists():
             raise serializers.ValidationError(
                 _('This economic code is already registered.')
             )
-        
+
         return value
 
 
@@ -181,17 +182,17 @@ class ProfileSwitchToIndividualSerializer(serializers.Serializer):
             'required': _('National code is required.'),
         }
     )
-    
+
     def validate_national_code(self, value):
         """اعتبارسنجی کد ملی"""
         validate_national_code(value)
-        
+
         # بررسی یکتایی
         if Profile.objects.filter(national_code=value).exists():
             raise serializers.ValidationError(
                 _('This national code is already registered.')
             )
-        
+
         return value
 
 

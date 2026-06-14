@@ -9,6 +9,7 @@ import {
   InputGroup, Label, Input, SubmitButton, BottomLink, Tabs, Tab
 } from './AuthStyles'; // AlertMessage حذف شد
 import { useToast } from '../ui/ToastProvider';
+import { apiFetch } from '../../utils/apiFetch';
 
 export default function RegisterClient() {
   const router = useRouter();
@@ -36,15 +37,15 @@ export default function RegisterClient() {
     }
 
     const endpoint = activeTab === 'email'
-      ? 'http://localhost:8000/api/v1/accounts/auth/register/email/'
-      : 'http://localhost:8000/api/v1/accounts/auth/register/mobile/';
+      ? '/api/v1/accounts/auth/register/email/'
+      : '/api/v1/accounts/auth/register/mobile/';
 
     const payload = activeTab === 'email'
       ? { email: formData.email, password: formData.password, password_confirm: formData.password_confirm, first_name: formData.first_name, last_name: formData.last_name }
       : { mobile: formData.mobile, password: formData.password };
 
     try {
-      const res = await fetch(endpoint, {
+      const res = await apiFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
