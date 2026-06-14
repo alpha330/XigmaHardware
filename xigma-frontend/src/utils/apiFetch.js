@@ -5,9 +5,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 let refreshTokenPromise = null;
 
-const forceLogout = (endpoint,options = {}) => {
-
-
+const forceLogout = () => {
   Cookies.remove('token', { path: '/' });
   Cookies.remove('refresh', { path: '/' });
   if (typeof window !== 'undefined') {
@@ -19,11 +17,13 @@ export const apiFetch = async (endpoint, options = {}) => {
   const getAccessToken = () => Cookies.get('token');
   const getRefreshToken = () => Cookies.get('refresh');
 
+  // 🎯 جادوی آپلود فایل همین‌جا داخل setHeaders پیاده‌سازی شده است
   const setHeaders = (token) => {
     const headers = new Headers(options.headers || {});
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
+    // اگر body از نوع FormData باشد، Content-Type ست نمی‌شود تا مرورگر خودش boundary بسازد
     if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
       headers.set('Content-Type', 'application/json');
     }
@@ -46,7 +46,6 @@ export const apiFetch = async (endpoint, options = {}) => {
     }
 
     if (!refreshTokenPromise) {
-      // 🎯 اصلاح شد: استفاده از BASE_URL به جای هاردکد کردن localhost
       refreshTokenPromise = fetch(`${BASE_URL}/api/v1/accounts/auth/token/refresh/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

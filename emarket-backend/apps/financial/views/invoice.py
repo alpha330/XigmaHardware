@@ -55,8 +55,15 @@ class InvoiceViewSet(mixins.ListModelMixin,
         return InvoiceSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        # اکشن‌هایی که کاربر برای مشاهده فاکتورهای خودش نیاز دارد
+        if self.action in ['list', 'retrieve', 'my_invoices']:
             return [IsAuthenticated(), CanViewOwnInvoices()]
+
+        # اکشن‌هایی که کاربر برای خرید و شارژ کیف پول نیاز دارد
+        elif self.action in ['create_from_cart', 'wallet_charge']:
+            return [IsAuthenticated()]
+
+        # سایر اکشن‌ها (مثل تغییر وضعیت، افزودن آیتم دستی و...) فقط برای مدیران
         return [IsAuthenticated(), CanManageFinancial()]
 
     def get_queryset(self):

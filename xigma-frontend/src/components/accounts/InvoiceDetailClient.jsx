@@ -138,6 +138,52 @@ const PayButton = styled.button`
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
+// --- Tracking Styles (New) ---
+const TrackingTimeline = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+`;
+
+const TrackingItem = styled.div`
+  display: flex;
+  gap: 1rem;
+  position: relative;
+
+  /* خط عمودی تایم‌لاین */
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: 30px;
+    right: 11px; /* هماهنگ با سایز دایره */
+    width: 2px;
+    height: calc(100% - 10px);
+    background-color: ${({ theme, active }) => active ? theme.colors.success : theme.colors.border};
+  }
+`;
+
+const Dot = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: ${({ theme, active }) => active ? theme.colors.success : theme.colors.background};
+  border: 3px solid ${({ theme, active }) => active ? theme.colors.success : theme.colors.border};
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1;
+`;
+
+const TrackContent = styled.div`
+  flex: 1;
+  background-color: ${({ theme }) => theme.colors.background};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 1rem;
+  border-radius: 8px;
+
+  h4 { margin: 0 0 0.4rem 0; color: ${({ theme }) => theme.colors.textMain}; font-size: 1rem; }
+  p { margin: 0; color: ${({ theme }) => theme.colors.textMuted}; font-size: 0.85rem; }
+`;
+
 // دیکشنری وضعیت‌ها
 const statusDict = {
   draft: { label: 'پیش‌نویس', color: 'textMuted' },
@@ -148,12 +194,20 @@ const statusDict = {
   overdue: { label: 'معوقه', color: 'error' },
 };
 
+// دیکشنری وضعیت‌های لجستیک (Shipment)
+const shipmentStatusDict = {
+  pending: { label: 'در انتظار تایید انبار', icon: '📦', active: true },
+  assigned: { label: 'تخصیص به پیک / پست', icon: '🛵', active: true },
+  picked_up: { label: 'دریافت شده توسط پیک', icon: '🚚', active: true },
+  delivered: { label: 'تحویل داده شده', icon: '✅', active: true },
+  cancelled: { label: 'لغو شده', icon: '❌', active: false },
+};
+
 export default function InvoiceDetailClient({ invoiceId }) {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState(null);
 
-  // برای حالت پرداخت مجدد
   const [gateways, setGateways] = useState([]);
   const [selectedGateway, setSelectedGateway] = useState('');
   const [payLoading, setPayLoading] = useState(false);
@@ -168,7 +222,6 @@ export default function InvoiceDetailClient({ invoiceId }) {
           const data = await res.json();
           setInvoice(data);
 
-          // اگر فاکتور پرداخت نشده است، درگاه‌ها را بگیریم
           if (data.status === 'pending' || data.status === 'partially_paid') {
             const gwRes = await apiFetch('/api/v1/payment/active_gateways/');
             if (gwRes.ok) {
@@ -182,7 +235,7 @@ export default function InvoiceDetailClient({ invoiceId }) {
             }
           }
         } else {
-          showToast('فاکتور یافت نشد.', 'error');
+          showToast('سفارش یافت نشد.', 'error');
         }
       } catch (error) {
         showToast('خطا در دریافت اطلاعات فاکتور.', 'error');
@@ -208,7 +261,7 @@ export default function InvoiceDetailClient({ invoiceId }) {
         if (!payRes.ok) throw new Error(payData.error || 'موجودی کیف پول کافی نیست.');
 
         showToast('پرداخت با موفقیت انجام شد!', 'success');
-        window.location.reload(); // رفرش برای آپدیت وضعیت
+        window.location.reload();
       } else {
         const payRes = await apiFetch('/api/v1/payment/pay/', {
           method: 'POST',
@@ -230,10 +283,14 @@ export default function InvoiceDetailClient({ invoiceId }) {
     }
   };
 
-  if (loading) return <PageWrapper><h2 style={{ textAlign: 'center', width: '100%' }}>در حال بارگذاری جزئیات...</h2></PageWrapper>;
-  if (!invoice) return <PageWrapper><h2>فاکتوری یافت نشد.</h2></PageWrapper>;
+  if (loading) return <PageWrapper><h2 style={{ textAlign: 'center', width: '100%' }}>در حال دریافت اطلاعات سفارش...</h2></PageWrapper>;
+  if (!invoice) return <PageWrapper><h2>سفارشی یافت نشد.</h2></PageWrapper>;
 
   const statusInfo = statusDict[invoice.status] || { label: invoice.status, color: 'textMuted' };
+
+  // استخراج اطلاعات ارسال (اگر وجود داشته باشد)
+  // در بک‌اند شما relation با نام shipments وجود دارد (احتمالاً آرایه است)
+  const shipment = invoice.shipments && invoice.shipments.length > 0 ? invoice.shipments[0] : null;
 
   return (
     <PageWrapper>
@@ -242,7 +299,7 @@ export default function InvoiceDetailClient({ invoiceId }) {
 
         <Card>
           <HeaderRow>
-            <Title>🧾 فاکتور #{invoice.invoice_number}</Title>
+            <Title>🧾 سفارش #{invoice.invoice_number}</Title>
             <Badge color={statusInfo.color}>{statusInfo.label}</Badge>
           </HeaderRow>
 
@@ -257,7 +314,7 @@ export default function InvoiceDetailClient({ invoiceId }) {
             </InfoBox>
             <InfoBox>
               <span className="label">شماره تماس:</span>
-              <span className="value">{invoice.billing_phone || 'ثبت نشده'}</span>
+              <span className="value" dir="ltr" style={{ textAlign: 'right' }}>{invoice.billing_phone || 'ثبت نشده'}</span>
             </InfoBox>
             <InfoBox style={{ gridColumn: '1 / -1' }}>
               <span className="label">آدرس ارسال:</span>
@@ -265,6 +322,60 @@ export default function InvoiceDetailClient({ invoiceId }) {
             </InfoBox>
           </InfoGrid>
         </Card>
+
+        {/* 🎯 بخش جدید: پیگیری مرسوله (فقط اگر Shipment وجود داشته باشد) */}
+        {shipment && (
+          <Card>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--textMain)' }}>
+              🚚 پیگیری مرسوله
+            </h2>
+
+            <div style={{ marginBottom: '1.5rem', backgroundColor: 'var(--background)', padding: '1rem', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                <InfoBox>
+                  <span className="label">کد رهگیری پستی / پیک:</span>
+                  <span className="value" dir="ltr">{shipment.courier_tracking_code || 'هنوز صادر نشده'}</span>
+                </InfoBox>
+                {shipment.courier_name && (
+                  <InfoBox>
+                    <span className="label">شرکت ارسال‌کننده:</span>
+                    <span className="value">{shipment.courier_name}</span>
+                  </InfoBox>
+                )}
+              </div>
+            </div>
+
+            <TrackingTimeline>
+              {/* اگر بک‌اند شما event های ترکینگ رو می‌فرسته (tracking_events)، روی اون مپ می‌زنیم،
+                  در غیر این صورت از وضعیت کلی خود shipment استفاده می‌کنیم. */}
+              {shipment.tracking_events && shipment.tracking_events.length > 0 ? (
+                shipment.tracking_events.map((event, i) => {
+                  const sInfo = shipmentStatusDict[event.status.toLowerCase()] || { label: event.status, icon: '📍', active: true };
+                  return (
+                    <TrackingItem key={i} active={sInfo.active}>
+                      <Dot active={sInfo.active}>{sInfo.icon}</Dot>
+                      <TrackContent>
+                        <h4>{sInfo.label}</h4>
+                        <p>{event.description || 'بدون توضیحات'}</p>
+                        <p style={{ marginTop: '0.4rem', color: 'var(--textMuted)', fontSize: '0.8rem' }}>
+                          {new Date(event.created_at).toLocaleDateString('fa-IR')} - {new Date(event.created_at).toLocaleTimeString('fa-IR')}
+                        </p>
+                      </TrackContent>
+                    </TrackingItem>
+                  );
+                })
+              ) : (
+                <TrackingItem active={true}>
+                  <Dot active={true}>📍</Dot>
+                  <TrackContent>
+                    <h4>{shipmentStatusDict[shipment.status.toLowerCase()]?.label || shipment.status}</h4>
+                    <p>در حال بروزرسانی اطلاعات پیک...</p>
+                  </TrackContent>
+                </TrackingItem>
+              )}
+            </TrackingTimeline>
+          </Card>
+        )}
 
         <Card>
           <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--textMain)' }}>اقلام سفارش</h2>
@@ -291,7 +402,7 @@ export default function InvoiceDetailClient({ invoiceId }) {
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan="5" style={{ textAlign: 'center' }}>هیچ آیتمی ثبت نشده است.</td></tr>
+                  <tr><td colSpan="5" style={{ textAlign: 'center' }}>هیچ آیتمی یافت نشد.</td></tr>
                 )}
               </tbody>
             </Table>
@@ -332,7 +443,7 @@ export default function InvoiceDetailClient({ invoiceId }) {
           <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '1rem 0' }} />
 
           <SummaryRow highlight>
-            <span>مبلغ نهایی فاکتور:</span>
+            <span>مبلغ نهایی:</span>
             <span style={{ color: 'var(--primary)' }}>{formatPrice(invoice.total_amount)}</span>
           </SummaryRow>
 
@@ -341,7 +452,6 @@ export default function InvoiceDetailClient({ invoiceId }) {
             <span style={{ color: 'var(--success)' }}>{formatPrice(invoice.paid_amount)}</span>
           </SummaryRow>
 
-          {/* فرم پرداخت فقط در صورتی نمایش داده می‌شود که فاکتور بدهی داشته باشد */}
           {(invoice.status === 'pending' || invoice.status === 'partially_paid') && invoice.remaining_amount > 0 && (
             <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: 'var(--background)', borderRadius: '12px', border: '1px solid var(--warning)' }}>
               <SummaryRow highlight style={{ color: 'var(--error)' }}>
@@ -360,7 +470,6 @@ export default function InvoiceDetailClient({ invoiceId }) {
               </PayButton>
             </div>
           )}
-
         </Card>
       </div>
     </PageWrapper>

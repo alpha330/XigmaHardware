@@ -3,6 +3,7 @@ import { Vazirmatn } from 'next/font/google';
 import ThemeRegistry from '../theme/ThemeRegistry';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import LiveChatWidget from '../components/support/LiveChatWidget';
 
 const vazirmatn = Vazirmatn({
   subsets: ['latin', 'arabic'],
@@ -26,8 +27,10 @@ export default function RootLayout({ children }) {
             <main style={{ flex: 1 }}>
               {children}
             </main>
+            <LiveChatWidget />
             <Footer />
           </div>
+
         </ThemeRegistry>
       </body>
     </html>

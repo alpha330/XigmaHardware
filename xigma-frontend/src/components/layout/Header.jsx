@@ -276,8 +276,7 @@ export default function Header() {
                 {/* لینک‌های مخصوص خریدار معمولی */}
                 {role === 'client' && !isSuperuser && (
                   <>
-                    <DropdownItem href="/basket/orders">📦 سفارشات من</DropdownItem>
-                    <DropdownItem href="/accounts/invoices">💳 تراکنشها</DropdownItem>
+                    <DropdownItem href="/accounts/invoices">💳 سفارشات و فاکتورها</DropdownItem>
                     <DropdownItem href="/support/tickets">🎫 تیکت‌های پشتیبانی</DropdownItem>
                   </>
                 )}
