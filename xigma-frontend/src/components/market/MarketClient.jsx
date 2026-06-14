@@ -58,16 +58,19 @@ const CategoryList = styled.ul`
 
 const CategoryItem = styled(Link)`
   display: block;
-  padding: 0.5rem;
-  color: ${({ theme, active }) => active ? theme.colors.primary : theme.colors.textMuted};
-  font-weight: ${({ active }) => active ? 'bold' : 'normal'};
+  padding: 0.8rem 1rem;
   border-radius: 8px;
-  transition: all 0.2s ease;
-  background-color: ${({ theme, active }) => active ? `${theme.colors.primary}15` : 'transparent'};
+  text-decoration: none;
+  transition: all 0.2s;
+
+  /* 🎯 استفاده از $active به جای active */
+  color: ${({ theme, $active }) => $active ? theme.colors.primary : theme.colors.textMain};
+  background-color: ${({ theme, $active }) => $active ? `${theme.colors.primary}15` : 'transparent'};
+  font-weight: ${({ $active }) => $active ? 'bold' : 'normal'};
 
   &:hover {
+    background-color: ${({ theme }) => `${theme.colors.primary}15`};
     color: ${({ theme }) => theme.colors.primary};
-    background-color: ${({ theme }) => `${theme.colors.primary}10`};
   }
 `;
 
@@ -116,7 +119,7 @@ export default function MarketClient({ products, categories }) {
           <li>
             <CategoryItem
               href="/market"
-              active={!currentCategory}
+              $active={!currentCategory} /* 🎯 اضافه شدن علامت $ */
             >
               همه محصولات
             </CategoryItem>
@@ -127,7 +130,7 @@ export default function MarketClient({ products, categories }) {
             <li key={cat.id}>
               <CategoryItem
                 href={`/market?category=${cat.id}`}
-                active={currentCategory === String(cat.id)}
+                $active={currentCategory === String(cat.id)} /* 🎯 علامت $ را اینجا هم اضافه کنید */
               >
                 {cat.name || cat.title}
               </CategoryItem>
