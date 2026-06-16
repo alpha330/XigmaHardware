@@ -1,11 +1,13 @@
 // src/components/basket/CartClient.jsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
 import { apiFetch } from '../../utils/apiFetch';
 import { useToast } from '../ui/ToastProvider';
+import { useCart } from '@/context/CartContext';
+import { useRouter } from 'next/navigation';
 
 // ================= STYLES =================
 const PageWrapper = styled.div`
@@ -199,59 +201,38 @@ const CheckoutButton = styled.button`
   &:disabled { background-color: ${({ theme }) => theme.colors.border}; cursor: not-allowed; }
 `;
 
+// ================= COMPONENT =================
 export default function CartClient() {
   const { showToast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState(null); // نگهداری کل آبجکت CartSerializer
+  const router = useRouter();
+  // 🎯 اتصال کامل به استیت سراسری سبد خرید
+  const { fetchCart, cart, isCartLoading } = useCart();
   const [actionLoading, setActionLoading] = useState(null); // ID آیتمی که در حال آپدیت است
 
-  // فرمت‌کننده قیمت (مثلا: ۱,۲۰۰,۰۰۰ تومان)
+  // فرمت‌کننده قیمت
   const formatPrice = (price) => {
     return new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
   };
-
-  // واکشی سبد خرید فعال
-  const fetchCart = async () => {
-    try {
-      // 🎯 اصلاح آدرس طبق اکشن my_cart در بک‌اند
-      const res = await apiFetch('/api/v1/basket/carts/my_cart/');
-      if (res.ok) {
-        const data = await res.json();
-        setCart(data);
-      } else if (res.status === 404) {
-        setCart(null);
-      }
-    } catch (error) {
-      console.error('Fetch cart error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchCart();
-  }, []);
 
   // بروزرسانی تعداد آیتم
   const handleUpdateQuantity = async (itemId, currentQty, change, maxAvailable) => {
     const newQty = currentQty + change;
     if (newQty < 1) return;
     if (newQty > maxAvailable) {
-      return showToast(`موجودی این کالا حداکثر ${maxAvailable} عدد است.`, 'warning');
+      return showToast(`موجودی این کالا در فروشگاه کافی نیست.`, 'warning');
     }
 
     setActionLoading(itemId);
     try {
-      // 🎯 اصلاح آدرس و متد طبق اکشن update_item در بک‌اند
-      // دقت کنید که متد POST است و به آیدی خود سبد (cart.id) هم نیاز داریم
       const res = await apiFetch(`/api/v1/basket/carts/${cart.id}/update-item/${itemId}/`, {
         method: 'POST',
         body: JSON.stringify({ quantity: newQty })
       });
 
       if (!res.ok) throw new Error();
-      await fetchCart(); // رفرش سبد برای محاسبه مجدد قیمت‌ها
+
+      // 🎯 آپدیت کردن کانتکست تا عدد جدید در کل سایت منعکس شود
+      await fetchCart();
     } catch (error) {
       showToast('خطا در بروزرسانی تعداد.', 'error');
     } finally {
@@ -263,13 +244,16 @@ export default function CartClient() {
   const handleRemoveItem = async (itemId) => {
     setActionLoading(itemId);
     try {
-      // 🎯 اصلاح آدرس و متد طبق اکشن remove_item در بک‌اند
-      const res = await apiFetch(`/api/v1/basket/carts/${cart.id}/remove-item/${itemId}/`, {
-        method: 'POST' // در بک‌اند شما حذف با متد POST هندل شده است
+      const res = await apiFetch(`/api/v1/basket/carts/${cart.id}/update-item/${itemId}/`, {
+        method: 'POST',
+        body: JSON.stringify({ quantity: 0 }) // در بک‌اند شما، تعداد صفر معادل حذف است
       });
 
       if (!res.ok) throw new Error();
+
       showToast('کالا از سبد خرید حذف شد.', 'success');
+
+      // 🎯 گرفتن دیتای جدید از بک‌اند پس از حذف
       await fetchCart();
     } catch (error) {
       showToast('خطا در حذف کالا.', 'error');
@@ -277,7 +261,14 @@ export default function CartClient() {
     }
   };
 
-  if (loading) return <PageWrapper><h2 style={{ textAlign: 'center', width: '100%' }}>در حال بارگذاری سبد خرید...</h2></PageWrapper>;
+  // 🎯 نمایش لودینگ فقط در زمانی که کانتکست واقعاً در حال لود اطلاعات اولیه است
+  if (isCartLoading) {
+    return (
+      <PageWrapper>
+        <h2 style={{ textAlign: 'center', width: '100%', color: 'var(--textMuted)' }}>در حال بارگذاری سبد خرید...</h2>
+      </PageWrapper>
+    );
+  }
 
   // اگر سبد وجود نداشت یا آیتمی در آن نبود
   if (!cart || !cart.items || cart.items.length === 0) {
@@ -302,11 +293,12 @@ export default function CartClient() {
           {cart.items.map(item => (
             <CartItemRow key={item.id}>
               <ItemImage>
-                {item.product_image ? <img src={item.product_image} alt={item.product_name} /> : '📷'}
+                {item.product_image ? <img src={item.product_image} alt={item.product_name} /> : '📦'}
               </ItemImage>
 
               <ItemDetails>
-                <ItemTitle href={`/market/product/${item.product}`}>{item.product_name}</ItemTitle>
+                {/* 🎯 لینک به محصول بر اساس استایل و آدرس‌دهی پروژه شما */}
+                <ItemTitle href={`/market/products/${item.product}`}>{item.product_name}</ItemTitle>
                 <ItemSku>کد کالا: {item.product_sku}</ItemSku>
 
                 {!item.is_available && (
@@ -374,7 +366,10 @@ export default function CartClient() {
           </SummaryRow>
 
           {/* اگر کالای ناموجودی در سبد باشد، اجازه پرداخت نمی‌دهیم */}
-          <CheckoutButton disabled={!cart.can_checkout}>
+          <CheckoutButton
+            disabled={!cart.can_checkout}
+            onClick={() => router.push('/basket/checkout')} /* 🎯 هدایت به صفحه پرداخت */
+          >
             {cart.can_checkout ? 'تایید و ادامه فرآیند خرید' : 'سبد خرید نیازمند اصلاح است'}
           </CheckoutButton>
 

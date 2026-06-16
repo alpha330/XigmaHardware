@@ -83,12 +83,28 @@ class CartItem(models.Model):
     def __str__(self):
         return f"{self.product.name} x{self.quantity} - {self.cart}"
 
+    def save(self, *args, **kwargs):
+        # 🎯 اگر قیمت واحد خالی بود (مثل زمان ایجاد از طریق پنل ادمین)
+        if self.unit_price is None and self.product_id:
+            # قیمت را به ترتیب اولویت از محصول می‌خوانیم
+            self.unit_price = (
+                getattr(self.product, 'final_market_price', None)
+                or self.product.market_price
+                or self.product.selling_price
+                or 0
+            )
+
+        super().save(*args, **kwargs)
+
     # ==================== Properties ====================
     @property
     def total_price(self):
-        """قیمت کل این آیتم"""
-        return self.unit_price * self.quantity
+        # 🎯 بررسی می‌کنیم که اگر قیمت واحد یا تعداد خالی بود، کرش نکند و صفر برگرداند
+        if self.unit_price is None or self.quantity is None:
+            from decimal import Decimal
+            return Decimal('0')
 
+        return self.unit_price * self.quantity
     @property
     def market_available(self):
         """موجودی در مارکت"""

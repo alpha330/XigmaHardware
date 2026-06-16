@@ -7,10 +7,10 @@ import { apiFetch } from '../../utils/apiFetch';
 
 // ================= STYLES =================
 const WidgetContainer = styled.div`
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  z-index: 9999;
+  position: fixed !important;
+  bottom: 2rem !important;
+  right: 2rem !important; /* سمت راست صفحه */
+  z-index: 99999 !important; /* بالاترین لایه ممکن */
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -30,7 +30,7 @@ const ToggleButton = styled.button`
   justify-content: center;
   font-size: 1.8rem;
   transition: transform 0.3s;
-
+  align-self: flex-start;
   &:hover { transform: scale(1.05); }
 `;
 
@@ -361,7 +361,7 @@ export default function LiveChatWidget() {
         )}
       </ChatWindow>
 
-      <ToggleButton onClick={() => setIsOpen(!isOpen)}>
+      <ToggleButton id="chat-toggle-btn" onClick={() => setIsOpen(!isOpen)}>
         {isOpen ? '✖' : '💬'}
       </ToggleButton>
     </WidgetContainer>

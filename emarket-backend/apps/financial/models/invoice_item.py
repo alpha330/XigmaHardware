@@ -60,14 +60,14 @@ class InvoiceItem(models.Model):
         _('Discount %'),
         max_digits=5,
         decimal_places=2,
-        default=0
+        default=Decimal('0.00')   # ← به Decimal تغییر کنه
     )
 
     tax_percent = models.DecimalField(
         _('Tax %'),
         max_digits=5,
         decimal_places=2,
-        default=9,
+        default=Decimal('9.00'),
         help_text=_('VAT percentage')
     )
 
@@ -102,9 +102,18 @@ class InvoiceItem(models.Model):
         return f"{self.description} x{self.quantity} - {self.invoice.invoice_number}"
 
     def save(self, *args, **kwargs):
-        """محاسبه خودکار قیمت کل"""
-        self.total_price = (
-            self.unit_price * self.quantity
-            * (1 - self.discount_percent / 100)
-        )
+        from decimal import Decimal
+
+        qty = Decimal(str(self.quantity))
+        price = self.unit_price
+        discount = Decimal(str(self.discount_percent or 0))
+        tax = Decimal(str(self.tax_percent or 0))
+        decimal_quantity = Decimal(str(self.quantity))
+        # قیمت پایه پس از تخفیف
+        discounted = price * (1 - discount / 100)
+        # افزودن مالیات
+        taxed = discounted * (1 + tax / 100)
+        # ضرب در تعداد
+        self.total_price = self.unit_price * decimal_quantity
+
         super().save(*args, **kwargs)

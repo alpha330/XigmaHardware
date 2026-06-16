@@ -72,23 +72,29 @@ class ProductListSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     """سریالایزر کامل محصول"""
     condition_display = serializers.SerializerMethodField()
-    brand = BrandSerializer(read_only=True)
-    series = BrandSeriesSerializer(read_only=True)
-    category = ProductCategorySerializer(read_only=True)
+
+    # 🎯 تغییر نام فیلدهای نمایشی به _info
+    brand_info = BrandSerializer(source='brand', read_only=True)
+    series_info = BrandSeriesSerializer(source='series', read_only=True)
+    category_info = ProductCategorySerializer(source='category', read_only=True)
+
     images = ProductImageSerializer(many=True, read_only=True)
     documents = ProductDocumentSerializer(many=True, read_only=True)
     total_stock = serializers.IntegerField(read_only=True)
     available_stock = serializers.IntegerField(read_only=True)
-    final_market_price = serializers.DecimalField(
-        max_digits=15, decimal_places=2, read_only=True
-    )
+    final_market_price = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
 
     class Meta:
         model = Product
         fields = [
             'id', 'sku', 'name', 'slug',
             'condition', 'condition_display',
-            'category', 'brand', 'series',
+
+            # 🎯 اضافه کردن فیلدهای اصلی (برای نوشتن ID) و فیلدهای info (برای خواندن اطلاعات کامل)
+            'category', 'category_info',
+            'brand', 'brand_info',
+            'series', 'series_info',
+
             'model_number', 'part_number',
             # Specs
             'processor', 'processor_cores', 'processor_threads',

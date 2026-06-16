@@ -21,7 +21,7 @@ async function getProducts(searchParams) {
       : `/api/v1/market/products/`;
 
     const res = await apiFetch(endpoint, { cache: 'no-store' });
-    console.log('Fetching products from:', res);
+
     if (!res.ok) throw new Error('Failed to fetch products');
 
     const data = await res.json();

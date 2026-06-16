@@ -15,6 +15,8 @@ from apps.accounts.permissions import (
     IsOwner,
     IsSuperAdmin,
     IsAdminOrStaff,
+    HasRole,
+    UserRole
 )
 from apps.accounts.services.user_service import UserService
 
@@ -41,7 +43,19 @@ class UserViewSet(
     - toggle_active: فعال/غیرفعال کردن کاربر (فقط ادمین)
     """
 
-    queryset = User.objects.all()
+    def get_queryset(self):
+        user = self.request.user
+        queryset = User.objects.all()
+
+        # اگر کاربر انباردار است و سوپر ادمین نیست، فقط پرسنل را به او نشان بده
+        if user.role == UserRole.STOCK_KEEPER and not user.is_superuser:
+            return queryset.filter(role__in=[
+                UserRole.STOCK_KEEPER,
+                UserRole.SUPER_ADMIN,
+                UserRole.ACCOUNTANT
+            ])
+
+        return queryset
 
     def get_serializer_class(self):
         """
@@ -59,6 +73,10 @@ class UserViewSet(
         """
         تنظیم permissions بر اساس action
         """
+        if self.action == 'list':
+            # دسترسی به سوپر ادمین و انباردار برای دیدن لیست
+            return [IsAuthenticated(), HasRole([UserRole.SUPER_ADMIN, UserRole.STOCK_KEEPER])]
+
         if self.action in ['me', 'delete_account']:
             permission_classes = [IsAuthenticated]
         elif self.action in ['list', 'retrieve']:

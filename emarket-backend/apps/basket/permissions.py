@@ -169,19 +169,31 @@ class CanUpdateCartItem(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         user = request.user
 
-        # مالک سبد
-        if not obj.cart.user == user:
-            return False
+        # If the view is passing a Cart object
+        if hasattr(obj, 'cart_type') and hasattr(obj, 'user'): # Simple check for Cart model
+            if obj.user != user:
+                return False
+            if obj.status != CartStatus.ACTIVE:
+                return False
+            return True
 
-        # آیتم فعال
-        if not obj.is_active:
-            return False
+        # If the view is passing a CartItem object
+        if hasattr(obj, 'cart'):
+            # مالک سبد
+            if not obj.cart.user == user:
+                return False
 
-        # سبد فعال
-        if obj.cart.status != CartStatus.ACTIVE:
-            return False
+            # آیتم فعال
+            if not getattr(obj, 'is_active', True):
+                return False
 
-        return True
+            # سبد فعال
+            if obj.cart.status != CartStatus.ACTIVE:
+                return False
+
+            return True
+
+        return False
 
 
 class CanViewCart(permissions.BasePermission):

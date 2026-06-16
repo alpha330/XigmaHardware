@@ -174,7 +174,7 @@ export default function WalletClient() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [chargeLoading, setChargeLoading] = useState(false);
-
+  const [userData, setUserData] = useState([]);
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
 
@@ -188,9 +188,9 @@ export default function WalletClient() {
     const fetchWalletData = async () => {
       try {
         const [walletRes, txRes, gwRes] = await Promise.all([
-          apiFetch('/api/v1/accounts/me/wallet/'),
-          apiFetch('/api/v1/financial/transactions/my_transactions/'),
-          apiFetch('/api/v1/payment/active_gateways/')
+          apiFetch('/api/v1/accounts/wallets/my_wallet/'),
+          apiFetch('/api/v1/accounts/wallets/my_transactions/'),
+          apiFetch('/api/v1/payment/gateways/active_gateways/')
         ]);
 
         if (walletRes.ok) setWallet(await walletRes.json());
@@ -203,6 +203,7 @@ export default function WalletClient() {
 
         if (gwRes.ok) {
           const gwData = await gwRes.json();
+          console.log("ACCOUNT WALLET GW :",gwData)
           // فیلتر کردن درگاه‌های آنلاین و حذف خود کیف پول از لیست گزینه‌های شارژ
           const onlineGateways = gwData.filter(gw => gw.type !== 'wallet' && gw.supports?.online);
           setGateways(onlineGateways);
@@ -215,7 +216,19 @@ export default function WalletClient() {
         setLoading(false);
       }
     };
-
+    const fetchUserData = async () => {
+        try {
+          const res = await apiFetch('/api/v1/accounts/users/me/');
+          if (res.ok) {
+            const data = await res.json();
+            const user = data.user || data;
+            setUserData(user);
+          }
+        } catch (error) {
+          console.error("Failed user");
+        }
+      };
+    fetchUserData()
     fetchWalletData();
   }, [showToast]);
 
@@ -236,6 +249,7 @@ export default function WalletClient() {
       const invoiceRes = await apiFetch('/api/v1/financial/invoices/wallet_charge/', {
         method: 'POST',
         body: JSON.stringify({
+          user_id:userData.id,
           amount: amountNum,
           payment_method: 'online_gateway',
           description: 'شارژ آنلاین کیف پول حساب کاربری'
@@ -251,7 +265,8 @@ export default function WalletClient() {
           amount: amountNum,
           invoice_id: invoiceData.invoice.id,
           gateway_id: selectedGateway,
-          callback_url: `${window.location.origin}/payment/verify`
+          // callback_url: `${window.location.origin}/payment/verify`
+          callback_url: `https://alimahmoodi.net`
         })
       });
       const payData = await payRes.json();

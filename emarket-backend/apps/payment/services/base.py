@@ -30,18 +30,7 @@ class BaseGateway(ABC):
         pass
 
     @abstractmethod
-    def verify_payment(self, gateway_code, amount):
-        """
-        تایید پرداخت
-
-        Returns:
-            dict: {
-                'success': bool,
-                'reference_code': str,  # کد پیگیری بانک
-                'card_number': str,     # شماره کارت (اختیاری)
-                'data': dict,
-            }
-        """
+    def verify_payment(self, gateway_code, amount, **kwargs):
         pass
 
     @abstractmethod

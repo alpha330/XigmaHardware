@@ -113,9 +113,9 @@ class CartViewSet(mixins.ListModelMixin,
         cart_type = serializer.validated_data['cart_type']
         quantity = serializer.validated_data['quantity']
 
-        # پیدا کردن یا ایجاد سبد
+        # 🎯 تغییر نام _ به cart_created برای جلوگیری از تداخل با تابع ترجمه جنگو
         if cart_type == 'cart':
-            cart, _ = Cart.objects.get_or_create(
+            cart, cart_created = Cart.objects.get_or_create(
                 user=request.user,
                 cart_type=CartType.CART,
                 status=CartStatus.ACTIVE,
@@ -123,7 +123,7 @@ class CartViewSet(mixins.ListModelMixin,
             )
         else:
             wishlist_name = serializer.validated_data.get('wishlist_name', 'My Wishlist')
-            cart, _ = Cart.objects.get_or_create(
+            cart, cart_created = Cart.objects.get_or_create(
                 user=request.user,
                 cart_type=CartType.WISHLIST,
                 status=CartStatus.ACTIVE,

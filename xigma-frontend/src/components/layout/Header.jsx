@@ -174,12 +174,24 @@ export default function Header() {
   const [userProfile, setUserProfile] = useState(null);
   const [userData, setUserData] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const token = Cookies.get('token');
-
+    const fetchUser = async () => {
+      try {
+        // فرض بر این است که این اندپوینت در بک‌اند شما وجود دارد
+        const res = await apiFetch('/api/v1/accounts/users/me/');
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error("User not logged in");
+      }
+    };
     if (token) {
       setIsLoggedIn(true);
       apiFetch('/api/v1/accounts/me/profile/')
@@ -207,12 +219,12 @@ export default function Header() {
         console.error('مشخصات کاربر ارتباط با سرور:', error);
       });
     }
-
+    fetchUser();
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
+  const stockAllowedRoles = ['super_admin', 'stock_keeper'];
   const handleLogout = async () => {
     try {
       const refresh = Cookies.get('refresh');
@@ -277,7 +289,7 @@ export default function Header() {
                 {role === 'client' && !isSuperuser && (
                   <>
                     <DropdownItem href="/accounts/invoices">💳 سفارشات و فاکتورها</DropdownItem>
-                    <DropdownItem href="/support/tickets">🎫 تیکت‌های پشتیبانی</DropdownItem>
+                    <DropdownItem href="/support">🎫 تیکت‌های پشتیبانی</DropdownItem>
                   </>
                 )}
 
@@ -296,10 +308,18 @@ export default function Header() {
                   </DropdownItem>
                 )}
 
-                {(isSuperuser || role === 'stock') && (
-                  <DropdownItem href="/stock-panel">
-                    📦 مدیریت انبار و موجودی <MenuBadge colorType="primary">Stock</MenuBadge>
-                  </DropdownItem>
+                {user && (user.is_superuser || stockAllowedRoles.includes(user.role)) && (
+                  <>
+                    <DropdownItem href="/admin/stock/products">
+                      ⚙️ داشبورد مدیریت کالاها
+                    </DropdownItem>
+                    <DropdownItem href="/admin/stock/warehouse">
+                      ⚙️ داشبورد مدیریت انبارها
+                    </DropdownItem>
+                    <DropdownItem href="/admin/stock/catalog">
+                      ⚙️ داشبورد مدیریت گروه های کالا
+                    </DropdownItem>
+                  </>
                 )}
 
                 {(isSuperuser || role === 'logistic') && (

@@ -108,7 +108,6 @@ const EmptyState = styled.div`
 export default function MarketClient({ products, categories }) {
   const searchParams = useSearchParams();
   const currentCategory = searchParams.get('category');
-
   return (
     <PageWrapper>
       {/* سایدبار فیلترها و دسته‌بندی‌ها */}
@@ -119,7 +118,7 @@ export default function MarketClient({ products, categories }) {
           <li>
             <CategoryItem
               href="/market"
-              $active={!currentCategory} /* 🎯 اضافه شدن علامت $ */
+              data-active={!currentCategory ? "true" : "false"} /* 🎯 اضافه شدن علامت $ */
             >
               همه محصولات
             </CategoryItem>
@@ -130,7 +129,7 @@ export default function MarketClient({ products, categories }) {
             <li key={cat.id}>
               <CategoryItem
                 href={`/market?category=${cat.id}`}
-                $active={currentCategory === String(cat.id)} /* 🎯 علامت $ را اینجا هم اضافه کنید */
+                data-active={currentCategory === String(cat.id)} /* 🎯 علامت $ را اینجا هم اضافه کنید */
               >
                 {cat.name || cat.title}
               </CategoryItem>

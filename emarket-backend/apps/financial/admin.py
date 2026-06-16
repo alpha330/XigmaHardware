@@ -3,9 +3,14 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
-from .models import Invoice, InvoiceItem, FinancialTransaction, FinancialReport
+from .models import Invoice, InvoiceItem, FinancialTransaction, FinancialReport,Coupon
 from .enums import InvoiceType, InvoiceStatus, PaymentMethod, PaymentStatus
 
+@admin.register(Coupon)
+class CouponAdmin(admin.ModelAdmin):
+    list_display = ['code', 'discount_type', 'discount_value', 'used_count', 'max_uses', 'is_active', 'valid_from', 'valid_to']
+    search_fields = ['code', 'description']
+    list_filter = ['discount_type', 'is_active']
 
 # ============================================================
 # Inline Models
@@ -166,17 +171,13 @@ class InvoiceAdmin(admin.ModelAdmin):
 
     @admin.display(description=_('Invoice #'))
     def invoice_number_short(self, obj):
-        return format_html(
-            '<code style="font-size: 11px;">{}</code>',
-            obj.invoice_number[:20]
-        )
+        return format_html('<code style="font-size:11px;">{}</code>', obj.invoice_number[:20])
 
     @admin.display(description=_('User'), ordering='user__email')
     def user_info(self, obj):
         if obj.user:
             return format_html(
-                '<div><b>{}</b></div>'
-                '<small style="color: #666;">{}</small>',
+                '<div><b>{}</b></div><small style="color:#666;">{}</small>',
                 obj.user.get_display_name(),
                 obj.user.email or obj.user.mobile or ''
             )
@@ -192,8 +193,8 @@ class InvoiceAdmin(admin.ModelAdmin):
         }
         color, icon = colors.get(obj.invoice_type, ('#6c757d', '📄'))
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; '
-            'border-radius: 4px; font-size: 11px;">{} {}</span>',
+            '<span style="background-color:{}; color:white; padding:3px 8px; '
+            'border-radius:4px; font-size:11px;">{} {}</span>',
             color, icon, obj.get_invoice_type_display()
         )
 
@@ -210,8 +211,8 @@ class InvoiceAdmin(admin.ModelAdmin):
         }
         color, icon = colors.get(obj.status, ('#6c757d', '❓'))
         return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; '
-            'border-radius: 4px; font-size: 11px;">{} {}</span>',
+            '<span style="background-color:{}; color:white; padding:3px 8px; '
+            'border-radius:4px; font-size:11px;">{} {}</span>',
             color, icon, obj.get_status_display()
         )
 
@@ -227,30 +228,35 @@ class InvoiceAdmin(admin.ModelAdmin):
         html = f'<b>{total:,}</b> Rials'
 
         if obj.discount_amount > 0:
-            html += f'<br/><small style="color: #e94560;">Disc: {int(obj.discount_amount):,}</small>'
+            html += f'<br/><small style="color:#e94560;">Disc: {int(obj.discount_amount):,}</small>'
 
         if obj.tax_amount > 0:
-            html += f'<br/><small style="color: #6c757d;">Tax: {int(obj.tax_amount):,}</small>'
+            html += f'<br/><small style="color:#6c757d;">Tax: {int(obj.tax_amount):,}</small>'
 
         return format_html(html)
 
     @admin.display(description=_('Payment'))
     def payment_progress(self, obj):
         if obj.is_fully_paid:
-            return format_html(
-                '<span style="color: #28a745;">✅ Paid</span>'
-            )
+            return format_html('<span style="color:#28a745;">✅ Paid</span>')
 
-        percent = int(obj.paid_amount / obj.total_amount * 100) if obj.total_amount > 0 else 0
+        total = int(obj.total_amount)
+        paid = int(obj.paid_amount)
+
+        if total == 0:
+            percent = 0
+        else:
+            percent = int(paid / total * 100)
 
         return format_html(
-            '<div style="background: #e9ecef; border-radius: 10px; height: 18px; width: 120px;">'
-            '<div style="background: linear-gradient(90deg, #28a745, #17a2b8); '
-            'height: 100%; width: {}%; border-radius: 10px; '
-            'text-align: center; color: white; font-size: 10px; line-height: 18px;">'
+            '<div style="background:#e9ecef; border-radius:10px; height:18px; width:120px;">'
+            '<div style="background:linear-gradient(90deg, #28a745, #17a2b8); '
+            'height:100%; width:{}%; border-radius:10px; '
+            'text-align:center; color:white; font-size:10px; line-height:18px;">'
             '{}%</div></div>'
-            '<small>{:,}/{:,}</small>',
-            percent, percent, int(obj.paid_amount), int(obj.total_amount)
+            '<small>{}/{} Rials</small>',
+            percent, percent,
+            f'{paid:,}', f'{total:,}'    # ← f-string به عنوان رشته امن
         )
 
     @admin.display(description=_('Due Date'))
@@ -259,11 +265,9 @@ class InvoiceAdmin(admin.ModelAdmin):
             try:
                 import jdatetime
                 jalali = jdatetime.date.fromgregorian(date=obj.payment_due_date)
-
-                # چک overdue
                 if obj.status in ['pending', 'partially_paid'] and obj.payment_due_date < timezone.now().date():
                     return format_html(
-                        '<span style="color: #dc3545; font-weight: bold;">⚠️ {}</span>',
+                        '<span style="color:#dc3545; font-weight:bold;">⚠️ {}</span>',
                         jalali.strftime('%Y/%m/%d')
                     )
                 return jalali.strftime('%Y/%m/%d')
@@ -394,13 +398,13 @@ class InvoiceItemAdmin(admin.ModelAdmin):
 
     @admin.display(description=_('Unit Price'))
     def unit_price_display(self, obj):
-        return '{:,}'.format(int(obj.unit_price))
+        return format_html('<b>{}</b>', f'{int(obj.unit_price):,}')
 
     @admin.display(description=_('Total'))
     def total_price_display(self, obj):
         return format_html(
-            '<span style="color: #e94560; font-weight: bold;">{:,}</span>',
-            int(obj.total_price)
+            '<span style="color: #e94560; font-weight: bold;">{}</span>',
+            f'{int(obj.total_price):,}'
         )
 
     @admin.display(description=_('Created'))

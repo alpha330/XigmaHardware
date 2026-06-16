@@ -41,22 +41,33 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartListSerializer(serializers.ModelSerializer):
     """سریالایزر لیست سبدها"""
+    items = serializers.SerializerMethodField()
     total_items = serializers.IntegerField(read_only=True)
     total_quantity = serializers.IntegerField(read_only=True)
     subtotal = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    discount_total = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    # 🎯 اضافه شدن فیلد مالیات
+    tax_amount = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
     grand_total = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
     can_checkout = serializers.BooleanField(read_only=True)
     cart_type_display = serializers.SerializerMethodField()
+    discount_info = serializers.SerializerMethodField()
+    converted_from_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
         fields = [
-            'id', 'name', 'cart_type', 'cart_type_display',
-            'status', 'total_items', 'total_quantity',
-            'subtotal', 'discount_total', 'grand_total',
-            'discount_percent', 'can_checkout',
+            'id', 'user', 'name', 'cart_type', 'cart_type_display',
+            'status', 'notes',
+            'items', 'total_items', 'total_quantity',
+            'subtotal', 'discount_total', 'tax_amount', 'grand_total', # 🎯 اضافه شدن به لیست
+            'discount_percent', 'discount_amount', 'discount_type',
+            'discount_info', 'discount_note',
+            'can_checkout', 'converted_from_info',
+            'converted_from', 'converted_at',
             'created_at', 'updated_at',
         ]
+        read_only_fields = ['id', 'user', 'status', 'created_at', 'updated_at']
 
     def get_cart_type_display(self, obj):
         return {

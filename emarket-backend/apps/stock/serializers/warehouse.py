@@ -49,8 +49,13 @@ class WarehouseListSerializer(serializers.ModelSerializer):
 class WarehouseSerializer(serializers.ModelSerializer):
     """سریالایزر کامل انبار"""
     warehouse_type_display = serializers.SerializerMethodField()
-    manager = UserListSerializer(read_only=True)
-    staff = UserListSerializer(many=True, read_only=True)
+
+    # 🎯 این دو فیلد برای "خواندن" (GET) هستند و شی کامل را برمی‌گردانند
+    manager_info = UserListSerializer(source='manager', read_only=True)
+    staff_info = UserListSerializer(source='staff', many=True, read_only=True)
+
+    # 🎯 فیلدهای manager و staff اصلی (که از نوع PrimaryKeyRelatedField هستند) برای "نوشتن" (PATCH/PUT/POST) استفاده می‌شوند
+
     sub_warehouses = serializers.SerializerMethodField()
     parent_info = serializers.SerializerMethodField()
     location = serializers.SerializerMethodField()
@@ -62,13 +67,17 @@ class WarehouseSerializer(serializers.ModelSerializer):
             'id', 'code', 'name', 'warehouse_type', 'warehouse_type_display',
             'scope', 'parent', 'parent_info', 'sub_warehouses',
             'address', 'latitude', 'longitude', 'location',
-            'phone', 'email', 'manager', 'staff',
+            'phone', 'email',
+
+            'manager', 'manager_info', # هر دو را اضافه کنید
+            'staff', 'staff_info',     # هر دو را اضافه کنید
+
             'capacity', 'current_items', 'utilization',
             'specialized_hardware', 'description',
             'is_active', 'is_public',
             'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'code', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at'] # code را از اینجا برداشتم تا قابل آپدیت باشد (اگر می‌خواهید غیرقابل آپدیت باشد، برش گردانید)
 
     def get_warehouse_type_display(self, obj):
         return {

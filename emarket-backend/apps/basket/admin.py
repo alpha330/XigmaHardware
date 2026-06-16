@@ -26,22 +26,35 @@ class CartItemInline(admin.TabularInline):
     show_change_link = True
 
     def product_image_preview(self, obj):
-        if obj.product.main_image:
-            return format_html(
-                '<img src="{}" style="max-height: 40px; border-radius: 4px;" />',
-                obj.product.main_image.url
-            )
+        try:
+            # بررسی وجود محصول و سپس وجود عکس
+            if obj.product and obj.product.main_image:
+                return format_html(
+                    '<img src="{}" style="max-height: 40px; border-radius: 4px;" />',
+                    obj.product.main_image.url
+                )
+        except Exception:
+            # اگر محصول از دیتابیس حذف شده باشد (RelatedObjectDoesNotExist)
+            pass
         return '🖼️'
     product_image_preview.short_description = _('Image')
 
     def unit_price_display(self, obj):
-        return format_html('<b>{:,}</b> Rials', int(obj.unit_price))
+        # جلوگیری از کرش کردن در صورت خالی بودن قیمت
+        if obj.unit_price is None:
+            return '-'
+        formatted_price = f"{int(obj.unit_price):,}"
+        return format_html('<b>{}</b> Rials', formatted_price)
     unit_price_display.short_description = _('Unit Price')
 
     def total_price_display(self, obj):
+        # جلوگیری از کرش کردن در صورت خالی بودن قیمت کل
+        if getattr(obj, 'total_price', None) is None:
+            return '-'
+        formatted_total = f"{int(obj.total_price):,}"
         return format_html(
-            '<span style="color: #e94560; font-weight: bold;">{:,}</span> Rials',
-            int(obj.total_price)
+            '<span style="color: #e94560; font-weight: bold;">{}</span> Rials',
+            formatted_total
         )
     total_price_display.short_description = _('Total')
 
@@ -171,11 +184,11 @@ class CartAdmin(admin.ModelAdmin):
 
         if obj.discount_percent > 0 or obj.discount_amount > 0:
             return format_html(
-                '<span style="text-decoration: line-through; color: #999;">{:,}</span><br/>'
-                '<span style="color: #e94560; font-weight: bold;">{:,}</span>',
-                subtotal, grand
+                '<span style="text-decoration: line-through; color: #999;">{}</span><br/>'
+                '<span style="color: #e94560; font-weight: bold;">{}</span>',
+                f"{subtotal:,}", f"{grand:,}" # 🎯 فرمت در اینجا انجام شد
             )
-        return format_html('<b>{:,}</b>', subtotal)
+        return format_html('<b>{}</b>', f"{subtotal:,}")
 
     @admin.display(description=_('Discount'))
     def discount_badge(self, obj):
@@ -188,8 +201,8 @@ class CartAdmin(admin.ModelAdmin):
         elif obj.discount_amount > 0:
             return format_html(
                 '<span style="background-color: #e94560; color: white; padding: 2px 8px; '
-                'border-radius: 12px; font-size: 11px;">-{:,}</span>',
-                int(obj.discount_amount)
+                'border-radius: 12px; font-size: 11px;">-{}</span>',
+                f"{int(obj.discount_amount):,}" # 🎯 فرمت در اینجا
             )
         return '-'
 
@@ -230,7 +243,7 @@ class CartAdmin(admin.ModelAdmin):
         updated = queryset.filter(status='active').update(status='abandoned')
         self.message_user(request, _(f'{updated} cart(s) marked as abandoned.'), level='warning')
 
-    @admin.action(description=_('Apply 10% discount'))
+    @admin.action(description=_('Apply 10%% discount'))
     def apply_10_percent_discount(self, request, queryset):
         count = 0
         for cart in queryset.filter(cart_type='wishlist', status='active'):
@@ -240,9 +253,10 @@ class CartAdmin(admin.ModelAdmin):
             cart.discount_approved_at = __import__('django').utils.timezone.now()
             cart.save()
             count += 1
-        self.message_user(request, _(f'10% discount applied to {count} wishlist(s).'))
+        self.message_user(request, _(f'10%% discount applied to {count} wishlist(s).'))
 
-    @admin.action(description=_('Apply 20% discount'))
+    # Change '20%' to '20%%'
+    @admin.action(description=_('Apply 20%% discount'))
     def apply_20_percent_discount(self, request, queryset):
         count = 0
         for cart in queryset.filter(cart_type='wishlist', status='active'):
@@ -252,7 +266,7 @@ class CartAdmin(admin.ModelAdmin):
             cart.discount_approved_at = __import__('django').utils.timezone.now()
             cart.save()
             count += 1
-        self.message_user(request, _(f'20% discount applied to {count} wishlist(s).'))
+        self.message_user(request, _(f'20%% discount applied to {count} wishlist(s).'))
 
     @admin.action(description=_('Clear discount'))
     def clear_discount(self, request, queryset):
@@ -333,6 +347,8 @@ class CartItemAdmin(admin.ModelAdmin):
 
     list_per_page = 100
 
+
+
     @admin.display(description=_('Image'))
     def product_image(self, obj):
         if obj.product.main_image:
@@ -360,13 +376,17 @@ class CartItemAdmin(admin.ModelAdmin):
 
     @admin.display(description=_('Unit Price'))
     def unit_price_display(self, obj):
+        if obj.unit_price is None:
+            return '-'
         return '{:,}'.format(int(obj.unit_price))
 
     @admin.display(description=_('Total'))
     def total_price_display(self, obj):
+        if getattr(obj, 'total_price', None) is None:
+            return '-'
         return format_html(
-            '<span style="color: #e94560; font-weight: bold;">{:,}</span>',
-            int(obj.total_price)
+            '<span style="color: #e94560; font-weight: bold;">{}</span>',
+            f"{int(obj.total_price):,}"
         )
 
     @admin.display(description=_('Active'))
@@ -388,6 +408,8 @@ class CartItemAdmin(admin.ModelAdmin):
     def mark_inactive(self, request, queryset):
         updated = queryset.update(is_active=False)
         self.message_user(request, _(f'{updated} item(s) marked as inactive.'))
+
+
 
 
 # ============================================================
@@ -456,9 +478,9 @@ class WishlistAdmin(admin.ModelAdmin):
             total = obj.estimated_total if hasattr(obj, 'cart') else 0
             color = '#dc3545' if total > obj.budget_limit else '#28a745'
             return format_html(
-                '<span>Budget: <b>{:,}</b></span><br/>'
-                '<span style="color: {};">Current: <b>{:,}</b></span>',
-                int(obj.budget_limit), color, int(total)
+                '<span>Budget: <b>{}</b></span><br/>'
+                '<span style="color: {};">Current: <b>{}</b></span>',
+                f"{int(obj.budget_limit):,}", color, f"{int(total):,}" # 🎯 فرمت در اینجا
             )
         return format_html('<span style="color: #6c757d;">No budget</span>')
 

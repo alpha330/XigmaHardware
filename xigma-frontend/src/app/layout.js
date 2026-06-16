@@ -4,6 +4,8 @@ import ThemeRegistry from '../theme/ThemeRegistry';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import LiveChatWidget from '../components/support/LiveChatWidget';
+import { CartProvider } from '../context/CartContext';
+import "@/app/globals.css"
 
 const vazirmatn = Vazirmatn({
   subsets: ['latin', 'arabic'],
@@ -25,12 +27,13 @@ export default function RootLayout({ children }) {
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
             <Header />
             <main style={{ flex: 1 }}>
-              {children}
+              <CartProvider>
+                {children}
+              </CartProvider>
             </main>
-            <LiveChatWidget />
             <Footer />
           </div>
-
+          <LiveChatWidget />
         </ThemeRegistry>
       </body>
     </html>

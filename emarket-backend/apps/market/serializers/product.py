@@ -16,6 +16,7 @@ class MarketProductListSerializer(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField()
     rating_summary = serializers.SerializerMethodField()
     discount_badge = serializers.SerializerMethodField()
+    stock_product_id = serializers.UUIDField(source='stock_product.id', read_only=True)
 
     class Meta:
         model = MarketProduct
@@ -28,18 +29,43 @@ class MarketProductListSerializer(serializers.ModelSerializer):
             'avg_rating', 'rating_count', 'rating_summary',
             'views_count', 'sales_count', 'wishlist_count',
             'is_featured', 'is_bestseller',
-            'created_at',
+            'created_at','stock_product_id'
         ]
 
     def get_main_image(self, obj):
+        # ۱. ابتدا بررسی می‌کنیم آیا خود MarketProduct تصویر اختصاصی دارد؟
         media = obj.media.filter(is_main=True).first()
         if not media:
             media = obj.media.first()
+
+        # ۲. اگر در مارکت تصویری نبود، به سراغ کالای متصل شده در انبار می‌رویم
+        if not media and obj.stock_product:
+            # فرض بر این است که مدل انبار دارای فیلد main_image است یا تصاویری در obj.stock_product.images دارد
+            if getattr(obj.stock_product, 'main_image', None):
+                image_url = obj.stock_product.main_image.url
+            else:
+                # جستجو در گالری تصاویر انبار
+                stock_img = obj.stock_product.images.filter(is_main=True).first()
+                if not stock_img:
+                    stock_img = obj.stock_product.images.first()
+                if stock_img and stock_img.image:
+                    image_url = stock_img.image.url
+                else:
+                    return None
+
+            # ساخت URL کامل برای تصویر انبار
+            request = self.context.get('request')
+            if request and image_url:
+                return request.build_absolute_uri(image_url)
+            return image_url
+
+        # ۳. اگر در خود مارکت تصویر بود، آن را برمی‌گردانیم
         if media and media.image:
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(media.image.url)
             return media.image.url
+
         return None
 
     def get_brand_name(self, obj):
@@ -76,8 +102,8 @@ class MarketProductSerializer(serializers.ModelSerializer):
     has_discount = serializers.BooleanField(read_only=True)
     is_in_stock = serializers.BooleanField(read_only=True)
     stock_info = serializers.DictField(read_only=True)
-
-    media = ProductMediaSerializer(many=True, read_only=True)
+    stock_product_id = serializers.UUIDField(source='stock_product.id', read_only=True)
+    media = serializers.SerializerMethodField()
     rating_summary = serializers.SerializerMethodField()
     recent_reviews = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
@@ -85,7 +111,7 @@ class MarketProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = MarketProduct
         fields = [
-            'id', 'title', 'slug', 'short_description', 'full_description',
+            'id', 'stock_product_id','title', 'slug', 'short_description', 'full_description',
             'market_price', 'discount_price', 'discount_percent',
             'discount_start', 'discount_end',
             'final_price', 'has_discount', 'is_in_stock',
@@ -104,20 +130,28 @@ class MarketProductSerializer(serializers.ModelSerializer):
             'avg_rating', 'rating_count', 'created_at', 'updated_at',
         ]
 
-    def get_rating_summary(self, obj):
-        return {
-            'overall': {
-                'avg': float(obj.avg_rating),
-                'count': obj.rating_count,
-                'stars': '⭐' * int(obj.avg_rating),
-            },
-            'breakdown': {
-                'value_for_money': float(obj.avg_value_for_money),
-                'quality': float(obj.avg_quality),
-                'performance': float(obj.avg_performance),
-            },
-            'distribution': self._get_rating_distribution(obj),
-        }
+
+    def get_media(self, obj):
+        # اگر مارکت مدیای اختصاصی دارد
+        if obj.media.exists():
+            return ProductMediaSerializer(obj.media.all(), many=True, context=self.context).data
+
+        # در غیر این صورت تصاویر انبار را با فرمت مشابه برگردان
+        if obj.stock_product and obj.stock_product.images.exists():
+            stock_images = obj.stock_product.images.all()
+            result = []
+            request = self.context.get('request')
+            for img in stock_images:
+                url = request.build_absolute_uri(img.image.url) if request else img.image.url
+                result.append({
+                    'id': str(img.id),
+                    'image': url,
+                    'is_main': img.is_main,
+                    # سایر فیلدهای مورد نیاز
+                })
+            return result
+
+        return []
 
     def get_recent_reviews(self, obj):
         reviews = obj.reviews.filter(status='published').order_by('-created_at')[:5]

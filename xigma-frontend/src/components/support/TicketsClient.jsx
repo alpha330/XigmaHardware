@@ -218,19 +218,35 @@ export default function TicketsClient() {
 
     setSubmitting(true);
     try {
-      // 🎯 بر اساس Model، در زمان Create، متن بدنه (body) اولین پیام تیکت را می‌سازد
       const res = await apiFetch('/api/v1/support/tickets/', {
         method: 'POST',
         body: JSON.stringify(formData)
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'خطا در ثبت تیکت');
+
+      if (!res.ok) {
+        // 🎯 این بخش تغییر کرده تا ارورهای DRF را دقیقاً استخراج کند
+        console.error("Backend Validation Error:", data);
+
+        // استخراج پیام خطای جنگو
+        let errorMsg = 'خطا در ثبت تیکت';
+        if (data.error) errorMsg = data.error;
+        else if (data.detail) errorMsg = data.detail;
+        else if (typeof data === 'object') {
+          // تبدیل آبجکت ارورهای جنگو به یک متن قابل خواندن
+          errorMsg = Object.entries(data)
+            .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors[0] : errors}`)
+            .join(' | ');
+        }
+
+        throw new Error(errorMsg);
+      }
 
       showToast('تیکت شما با موفقیت ثبت شد.', 'success');
       setShowModal(false);
       setFormData({ subject: '', category: 'other', priority: 'medium', body: '' });
-      fetchTickets(); // رفرش لیست
+      fetchTickets();
     } catch (error) {
       showToast(error.message, 'error');
     } finally {

@@ -198,9 +198,18 @@ class Cart(models.Model):
         return Decimal('0')
 
     @property
+    def tax_amount(self):
+        """محاسبه مالیات بر ارزش افزوده (۹٪) روی مبلغ بعد از تخفیف"""
+        amount_after_discount = max(self.subtotal - self.discount_total, Decimal('0'))
+        tax_rate = Decimal('0.09') # نرخ مالیات ۹ درصد
+        return amount_after_discount * tax_rate
+
+    @property
     def grand_total(self):
-        """جمع نهایی بعد از تخفیف"""
-        return max(self.subtotal - self.discount_total, Decimal('0'))
+        """جمع نهایی بعد از تخفیف و با احتساب مالیات"""
+        amount_after_discount = max(self.subtotal - self.discount_total, Decimal('0'))
+        # مالیات را به جمع نهایی اضافه می‌کنیم
+        return amount_after_discount + self.tax_amount
 
     # ==================== Methods ====================
     def convert_to_cart(self):

@@ -302,8 +302,25 @@ export default function TicketDetailClient({ ticketId }) {
       </TicketHeader>
 
       <ChatBox>
+        {/* 🎯 اضافه شدن بدنه اصلی تیکت به عنوان اولین پیام */}
+        {ticket.body && (
+          <MessageBubbleWrapper isStaff={false}>
+            <SenderName isStaff={false}>
+              👤 شما (متن اولیه تیکت)
+            </SenderName>
+
+            <BubbleContent isStaff={false}>
+              {ticket.body}
+            </BubbleContent>
+
+            <MessageTime isStaff={false}>
+              {new Date(ticket.created_at).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })} - {new Date(ticket.created_at).toLocaleDateString('fa-IR')}
+            </MessageTime>
+          </MessageBubbleWrapper>
+        )}
+
+        {/* نمایش ریپلای‌ها و پیام‌های بعدی */}
         {ticket.messages && ticket.messages.map((msg) => {
-          // مخفی کردن پیام‌های داخلی (Internal Notes) برای کاربر
           if (msg.is_internal_note) return null;
 
           return (
