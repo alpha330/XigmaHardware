@@ -116,46 +116,37 @@ class PaymentService:
         except PaymentLog.DoesNotExist:
             return {'success': False, 'error': 'Payment log not found.'}
 
-        # اگر قبلاً وریفای شده، خارج شو
         if payment_log.status == PaymentStatus.VERIFIED:
-            return {'success': True, 'already_verified': True, 'payment_log': payment_log}
+            return {'success': True, 'payment_log': payment_log}
 
         gateway = cls.get_gateway_instance(payment_log.gateway)
         result = gateway.verify_payment(gateway_code=payment_log.gateway_code, amount=payment_log.amount)
 
         if result.get('success'):
             payment_log.mark_verified(result.get('reference_code'))
-            logger.info(f"DEBUG: Payment verified. Invoice: {payment_log.invoice}")
-            # --- این بخش رو فقط برای دیباگ گذاشتم ---
+
+            # ثبت پرداخت در فاکتور
             if payment_log.invoice:
                 from apps.financial.services.invoice_service import InvoiceService
                 InvoiceService.record_payment(
                     invoice=payment_log.invoice,
-                    amount=payment_log.amount,  # <--- این همون پارامتریه که کم بود
+                    amount=float(payment_log.amount),
                     payment_method='online_gateway',
-                    reference_code=result.get('reference_code', ''),
+                    reference_code=str(result.get('reference_code', '')),
                     verified_by=None,
                 )
 
-                # بررسی نوع فاکتور (اینجا رو دقت کن)
-                actual_type = str(payment_log.invoice.invoice_type)
-                print(f"DEBUG_TYPE: Invoice ID={payment_log.invoice.id} Type='{actual_type}'")
-
-                # اگر تایپ فاکتور "Wallet Charge" است
-                if "wallet" in actual_type.lower() or "charge" in actual_type.lower():
+                # شارژ کیف پول (فقط اگر فاکتور شارژ است)
+                inv_type = str(payment_log.invoice.invoice_type).lower()
+                if "wallet" in inv_type or "charge" in inv_type:
                     from apps.accounts.services.wallet_service import WalletService
                     if hasattr(payment_log.user, 'wallet'):
                         WalletService.deposit(
                             wallet=payment_log.user.wallet,
-                            amount=payment_log.amount,
-                            description=f"شارژ کیف پول",
+                            amount=float(payment_log.amount),
+                            description="شارژ کیف پول",
                             reference_id=str(payment_log.id)
                         )
-                        print("DEBUG_SUCCESS: Wallet charged!")
-                    else:
-                        print("DEBUG_ERROR: User has no wallet!")
-                else:
-                    print("DEBUG_ERROR: Invoice type does not match 'wallet' or 'charge'!")
 
             return {'success': True, 'payment_log': payment_log}
 

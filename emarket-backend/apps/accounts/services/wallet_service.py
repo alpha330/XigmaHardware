@@ -2,6 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 from apps.accounts.enums import WalletTransactionType, WalletTransactionStatus
 from apps.accounts.models import Wallet, WalletTransaction
+from decimal import Decimal
 
 
 class WalletService:
@@ -22,7 +23,7 @@ class WalletService:
         transaction_obj = WalletTransaction.objects.create(
             wallet=wallet,
             transaction_type=WalletTransactionType.DEPOSIT,
-            amount=amount,
+            amount=Decimal(str(amount)),
             status=WalletTransactionStatus.COMPLETED,
             balance_before=wallet.balance,
             description=description,
@@ -54,7 +55,7 @@ class WalletService:
         transaction_obj = WalletTransaction.objects.create(
             wallet=wallet,
             transaction_type=WalletTransactionType.WITHDRAW,
-            amount=amount,
+            amount=Decimal(str(amount)),
             status=WalletTransactionStatus.COMPLETED,
             balance_before=wallet.balance,
             description=description,
@@ -85,7 +86,7 @@ class WalletService:
         # برداشت از مبدا
         withdraw_tx = WalletService.withdraw(
             from_wallet,
-            amount,
+            amount=Decimal(str(amount)),
             description=f'Transfer to {to_wallet.user.get_display_name()} - {description}',
             reference_id=reference_id
         )
@@ -93,7 +94,7 @@ class WalletService:
         # واریز به مقصد
         deposit_tx = WalletService.deposit(
             to_wallet,
-            amount,
+            amount=Decimal(str(amount)),
             description=f'Transfer from {from_wallet.user.get_display_name()} - {description}',
             reference_id=reference_id
         )
