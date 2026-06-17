@@ -1,12 +1,11 @@
 // src/components/basket/CheckoutClient.jsx
 'use client';
-import React, { useState, useEffect,useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '../../utils/apiFetch';
 import { useToast } from '../ui/ToastProvider';
-import PageLoader from  '@/components/shared/PageLoader'
-import dynamic from 'next/dynamic';
+import PageLoader from '@/components/shared/PageLoader';
 
 // ================= STYLES =================
 const PageWrapper = styled.div`
@@ -250,15 +249,11 @@ const OrderTableRow = styled.div`
   }
 `;
 
-const NeshanMap = dynamic(() => import('react-neshan-map-leaflet'), {
-  ssr: false,
-});
-
 // ================= COMPONENT =================
 export default function CheckoutClient() {
   const { showToast } = useToast();
   const router = useRouter();
-
+  const markerRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [coords, setCoords] = useState({ lat: 35.7, lng: 51.4 });
@@ -280,17 +275,20 @@ export default function CheckoutClient() {
     billing_address: '',
     customer_notes: ''
   });
-  const mapRef = useRef(null);
   const formatPrice = (price) => new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
 
+  const getAddressFromCoords = async (lat, lng) => {
+    try {
+      const res = await fetch(`https://api.neshan.org/v5/reverse?lat=${lat}&lng=${lng}`, {
+        headers: { 'Api-Key':'service.7a95737616be44d98464a6eb06308184' }
+      });
+      const data = await res.json();
+      if (data.formatted_address) setBillingInfo(prev => ({ ...prev, billing_address: data.formatted_address }));
+    } catch { showToast('خطا در دریافت آدرس', 'error'); }
+  };
 
   useEffect(() => {
-    const loadLeafletStyles = async () => {
-      await import('leaflet/dist/leaflet.css');
-      await import('leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css');
-      await import('leaflet-defaulticon-compatibility');
-    };
-    loadLeafletStyles();
+
     const fetchInitialData = async () => {
       try {
         const [cartRes, profileRes, userRes, gatewaysRes] = await Promise.all([
@@ -356,20 +354,7 @@ export default function CheckoutClient() {
   }, [router, showToast]);
 
 
-  const getAddressFromCoords = async (lat, lng) => {
-    try {
-      const response = await fetch(
-        `https://api.neshan.org/v5/reverse?lat=${lat}&lng=${lng}`,
-        { headers: { 'Api-Key':'service.7a95737616be44d98464a6eb06308184' } }
-      );
-      const data = await response.json();
-      if (data.formatted_address) {
-        setBillingInfo(prev => ({ ...prev, billing_address: data.formatted_address }));
-      }
-    } catch (error) {
-      showToast('خطا در دریافت خودکار آدرس از نقشه', 'error');
-    }
-  };
+
 
   const handleApplyCoupon = async (e) => {
     e.preventDefault();
@@ -410,6 +395,7 @@ export default function CheckoutClient() {
       const invoiceRes = await apiFetch('/api/v1/financial/invoices/create_from_cart/', {
         method: 'POST',
         body: JSON.stringify({
+          cart_id: cart.id,
           payment_method: 'online_gateway',
           notes: billingInfo.customer_notes
         })
@@ -440,18 +426,21 @@ export default function CheckoutClient() {
         body: JSON.stringify({
           amount: cart.grand_total - (appliedCoupon ? appliedCoupon.amount : 0),
           invoice_id: invoiceId,
+          description: "string",
           gateway_id: selectedGateway,
           callback_url: `${window.location.origin}/payment/verify`
         })
       });
 
       const payData = await payRes.json();
+      console.log("PAYMENST",payData)
       if (!payRes.ok) throw new Error(payData.error || 'خطا در تولید لینک پرداخت.');
 
       if (selectedGateway === 'wallet') {
         showToast('پرداخت با کیف پول انجام شد.', 'success');
         router.push(`/profile/invoices/${invoiceId}`);
       } else {
+        sessionStorage.setItem('last_payment_log_id', payData.payment_log_id);
         window.location.href = payData.payment_url;
       }
 
@@ -490,20 +479,18 @@ export default function CheckoutClient() {
             </InputGroup>
             <InputGroup fullWidth>
               <Label>انتخاب موقعیت دقیق روی نقشه</Label>
-              <div style={{ height: '300px', borderRadius: '8px', overflow: 'hidden' }}>
-                {/* استفاده از شرط برای جلوگیری از رندر مجدد غیرضروری */}
-                <NeshanMap
-                  ref={mapRef}
-                  mapKey="web.65dcd03c27774f60adbebfa70248785b"
-                  defaultType="neshan"
-                  center={coords}
-                  zoom={14}
-                  onChange={(e) => {
-                    setCoords({ lat: e.lat, lng: e.lng });
-                    getAddressFromCoords(e.lat, e.lng);
-                  }}
-                />
-              </div>
+              <iframe
+                src="/MapIframe.html"
+                style={{ width: '100%', height: '300px', border: 'none', borderRadius: '8px' }}
+                onLoad={() => {
+                  window.addEventListener("message", (event) => {
+                    if (event.data.lat) {
+                      setCoords({ lat: event.data.lat, lng: event.data.lng });
+                      getAddressFromCoords(event.data.lat, event.data.lng);
+                    }
+                  });
+                }}
+              />
             </InputGroup>
             <InputGroup>
               <Label>کد پستی (۱۰ رقمی)</Label>

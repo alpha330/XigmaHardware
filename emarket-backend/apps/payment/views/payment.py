@@ -128,99 +128,62 @@ class PaymentViewSet(mixins.ListModelMixin,
     # ==================== Callback (پشتیبانی از PayPing و ZarinPal) ====================
     @action(detail=False, methods=['get', 'post'], url_path='callback/(?P<payment_log_id>[^/.]+)')
     def callback(self, request, payment_log_id=None):
-        """
-        Callback از درگاه پرداخت.
-        PayPing: POST با JSON شامل status, data (JSON string)
-        ZarinPal: GET با ?Authority=...&Status=...
-        """
+        print(f"DEBUG: --- CALLBACK START --- PaymentID: {payment_log_id}")
+
+        # 1. دریافت لاگ
         try:
             payment_log = PaymentLog.objects.select_related('gateway').get(id=payment_log_id)
         except PaymentLog.DoesNotExist:
-            return Response({'error': _('Payment not found.')}, status=404)
+            print(f"DEBUG: Payment {payment_log_id} NOT FOUND!")
+            return Response({'error': 'Payment not found.'}, status=404)
 
+        # 2. تجزیه داده‌ها بر اساس نوع درگاه
         gateway_type = payment_log.gateway.gateway_type if payment_log.gateway else None
-
-        # تجزیه داده‌های callback بر اساس نوع درگاه
         callback_data = {}
 
         if gateway_type == GatewayType.ZARINPAL:
-            # زرین‌پال: GET با Authority و Status
             authority = request.GET.get('Authority')
             status_param = request.GET.get('Status')
-            if authority and status_param == 'OK':
-                callback_data = {
-                    'gateway_code': authority,
-                    'status': status_param,
-                }
-            else:
-                return Response({'success': False, 'error': 'Payment failed or cancelled.'})
+            callback_data = {'gateway_code': authority, 'status': status_param}
+            print(f"DEBUG: ZarinPal Data: {callback_data}")
 
         elif gateway_type == GatewayType.PAYPING:
-            # PayPing v3: POST با status و data (رشته JSON)
-            if request.method == 'POST':
-                status_val = request.data.get('status') or request.POST.get('status')
-                if status_val == 1:   # موفق
-                    data_str = request.data.get('data') or request.POST.get('data')
-                    try:
-                        data = json.loads(data_str) if isinstance(data_str, str) else data_str
-                    except (json.JSONDecodeError, TypeError):
-                        data = {}
-                    callback_data = {
-                        'paymentRefId': data.get('paymentRefId'),
-                        'paymentCode': data.get('paymentCode'),
-                        'amount': data.get('amount'),
-                        'clientRefId': data.get('clientRefId'),
-                    }
-                else:
-                    error_code = request.data.get('errorCode', 'unknown')
-                    return Response({
-                        'success': False,
-                        'error': f'Payment failed with code {error_code}.'
-                    })
-            else:
-                return Response({'error': 'Only POST is accepted for PayPing callback.'}, status=400)
-
+            # PayPing معمولاً POST می‌زند
+            data_str = request.data.get('data') or request.POST.get('data')
+            try:
+                data = json.loads(data_str) if isinstance(data_str, str) else data_str
+                callback_data = {'paymentRefId': data.get('paymentRefId'), 'amount': data.get('amount')}
+            except:
+                callback_data = request.data
+            print(f"DEBUG: PayPing Data: {callback_data}")
         else:
-            # درگاه‌های دیگر (در آینده)
             callback_data = request.data if request.method == 'POST' else request.GET.dict()
+            print(f"DEBUG: Generic Gateway Data: {callback_data}")
 
-        logger.info(f"Callback received for payment {payment_log_id}, gateway: {gateway_type}, data: {callback_data}")
-
+        # 3. فراخوانی سرویس تایید
+        print("DEBUG: Calling PaymentService.verify_payment...")
         try:
             result = PaymentService.verify_payment(
                 payment_log_id=payment_log_id,
                 callback_data=callback_data,
             )
+            print(f"DEBUG: PaymentService Result: {result}")
 
             if result.get('success'):
-                logger.info(f"Payment verified: {payment_log_id}")
-                if result.get('already_verified'):
-                    return Response({
-                        'success': True,
-                        'message': _('Payment was already verified.'),
-                        'payment_log_id': payment_log_id,
-                        'reference_code': result.get('reference_code'),
-                    })
-
                 return Response({
                     'success': True,
                     'message': _('Payment verified successfully.'),
-                    'payment_log_id': payment_log_id,
                     'reference_code': result.get('reference_code'),
                 })
-
-            return Response({
-                'success': False,
-                'error': result.get('error', _('Payment verification failed.')),
-            }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({
+                    'success': False,
+                    'error': result.get('error', 'Verification failed.')
+                }, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            logger.error(f"Callback error: {str(e)}")
-            return Response(
-                {'error': _('Callback processing error.')},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
+            print(f"DEBUG: EXCEPTION IN CALLBACK: {str(e)}")
+            return Response({'error': 'Internal server error during callback.'}, status=500)
     # ==================== تایید دستی (برای ادمین) ====================
     @action(detail=False, methods=['post'], url_path='verify/(?P<payment_log_id>[^/.]+)')
     def verify(self, request, payment_log_id=None):

@@ -14,13 +14,10 @@
     "@emotion/styled": "^11.14.1",
     "@react-google-maps/api": "^2.20.8",
     "js-cookie": "^3.0.8",
-    "leaflet": "^1.9.4",
-    "leaflet-defaulticon-compatibility": "^0.1.2",
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-multi-date-picker": "^4.5.2",
-    "react-neshan-map-leaflet": "^1.2.1"
+    "react-multi-date-picker": "^4.5.2"
   },
   "devDependencies": {
     "eslint": "^9",

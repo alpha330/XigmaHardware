@@ -203,7 +203,6 @@ export default function WalletClient() {
 
         if (gwRes.ok) {
           const gwData = await gwRes.json();
-          console.log("ACCOUNT WALLET GW :",gwData)
           // فیلتر کردن درگاه‌های آنلاین و حذف خود کیف پول از لیست گزینه‌های شارژ
           const onlineGateways = gwData.filter(gw => gw.type !== 'wallet' && gw.supports?.online);
           setGateways(onlineGateways);
@@ -265,13 +264,15 @@ export default function WalletClient() {
           amount: amountNum,
           invoice_id: invoiceData.invoice.id,
           gateway_id: selectedGateway,
-          // callback_url: `${window.location.origin}/payment/verify`
-          callback_url: `https://alimahmoodi.net`
+          description: "شارژ والت کاربر",
+          callback_url: `${window.location.origin}/payment/verify`
         })
       });
-      const payData = await payRes.json();
-      if (!payRes.ok) throw new Error(payData.error || 'خطا در اتصال به درگاه.');
 
+      if (!payRes.ok) throw new Error(payData.error || 'خطا در اتصال به درگاه.');
+      const payData = await payRes.json();
+      console.log(payData)
+      sessionStorage.setItem('last_payment_log_id',payData.payment_log_id);
       // هدایت کاربر به بانک
       window.location.href = payData.payment_url;
 

@@ -49,11 +49,15 @@ class PayPingGateway(BaseGateway):
             return {'success': False, 'error': str(e)}
 
     # -------------------- تأیید پرداخت --------------------
-    def verify_payment(self, payment_ref_id, payment_code, amount):
+    def verify_payment(self, gateway_code, amount, payment_ref_id=None, **kwargs):
+
+        if not payment_ref_id:
+            return {'success': False, 'error': 'payment_ref_id is required.'}
+
         url = f"{self.base_url}pay/verify"
         payload = {
             "paymentRefId": int(payment_ref_id),
-            "paymentCode": payment_code,
+            "paymentCode": gateway_code, # اینجا از gateway_code استفاده کنید
             "amount": int(amount),
         }
         try:

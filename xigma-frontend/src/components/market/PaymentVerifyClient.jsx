@@ -152,11 +152,23 @@ export default function PaymentVerifyClient() {
 
     // اگر Status === 'OK' بود، باید Authority را به بک‌اند بفرستیم تا تایید نهایی شود
     const verifyPayment = async () => {
+
+
       try {
         // 🎯 مسیر API بک‌اند شما برای تایید زرین‌پال
-        const res = await apiFetch('/api/v1/market/payment/verify/', {
-          method: 'POST',
-          body: JSON.stringify({ authority: authority })
+        const logId = sessionStorage.getItem('last_payment_log_id');
+
+        if (!logId) {
+            setVerifyState('error');
+            setErrorMessage('شناسه پرداخت پیدا نشد. لطفاً از طریق پروفایل کاربری وضعیت سفارش را چک کنید.');
+            return;
+        }
+        const res = await apiFetch(`/api/v1/payment/callback/${logId}/`, {
+            method: 'POST',
+            body: JSON.stringify({
+                authority: authority, // این را در body بفرستید نه در آدرس
+                status: status
+            })
         });
 
         const data = await res.json();

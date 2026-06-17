@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.payment.models import PaymentGateway, PaymentLog
 from apps.payment.enums import GatewayType, PaymentStatus
 from apps.payment.services.payping import PayPingGateway
+from apps.payment.services.zarinpal import ZarinPalGateway
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 class PaymentService:
     GATEWAY_CLASSES = {
         'payping': PayPingGateway,
+        'zarinpal': ZarinPalGateway,
     }
 
     @classmethod
@@ -40,148 +42,124 @@ class PaymentService:
     @db_transaction.atomic
     def create_payment(cls, user, amount, description='', invoice=None,
                        gateway_config=None, callback_url=None, request=None):
+
+        # ۱. دریافت تنظیمات درگاه
         if not gateway_config:
             gateway_config = cls.get_default_gateway()
 
-        # اعتبارسنجی مبلغ
-        if amount < gateway_config.min_amount:
-            raise ValueError(
-                _(f'Minimum amount is {gateway_config.min_amount:,} Rials.')
-            )
-        if amount > gateway_config.max_amount:
-            raise ValueError(
-                _(f'Maximum amount is {gateway_config.max_amount:,} Rials.')
-            )
+        # ۲. اعتبارسنجی مبلغ
+        if amount < gateway_config.min_amount or amount > gateway_config.max_amount:
+            raise ValueError(_('Amount is out of allowed range.'))
 
+        # ۳. ثبت لاگ پرداخت (قبل از اتصال به درگاه)
         payment_log = PaymentLog.objects.create(
             user=user,
             gateway=gateway_config,
             invoice=invoice,
             amount=amount,
             status=PaymentStatus.PENDING,
-            description=description[:500] if description else '',
+            description=(description or '')[:500],
             payer_ip=cls._get_client_ip(request) if request else None,
         )
 
-        gateway = cls.get_gateway_instance(gateway_config)
+        try:
+            gateway = cls.get_gateway_instance(gateway_config)
 
-        # 🔹 ارسال شناسه لاگ به درگاه (برای clientRefId)
-        if hasattr(gateway, 'payment_log_id'):
+            # تنظیم مقادیر مورد نیاز برای درگاه
             gateway.payment_log_id = str(payment_log.id)
+            if hasattr(user, 'profile') and user.profile:
+                gateway.national_code = user.profile.national_code or ''
 
-        # 🔹 ارسال کد ملی کاربر (در صورت وجود)
-        national_code = ''
-        if user and hasattr(user, 'profile') and user.profile:
-            national_code = user.profile.national_code or ''
-        if hasattr(gateway, 'national_code'):
-            gateway.national_code = national_code
+            # آماده‌سازی Callback URL
+            if not callback_url:
+                from django.conf import settings
+                site_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
+                callback_url = f"{site_url}/api/v1/payment/callback/{payment_log.id}/"
 
-        # آماده‌سازی callback URL
-        if not callback_url:
-            from django.conf import settings
-            callback_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
-            callback_url = f"{callback_url}/api/v1/payment/callback/{payment_log.id}/"
+            # ۴. فراخوانی درگاه
+            result = gateway.create_payment(
+                amount=amount,
+                description=description,
+                payer_name=user.get_display_name() if user else '',
+                payer_email=user.email if user else '',
+                payer_mobile=user.mobile if user else '',
+                callback_url=callback_url,
+            )
 
-        if gateway_config.callback_url:
-            callback_url = gateway_config.callback_url
+            if not result.get('success'):
+                # اگر درگاه خطا داد، لاگ را به‌روز کن و تراکنش را باطل کن
+                payment_log.mark_failed(result.get('error', 'Gateway error'))
+                raise ValueError(result.get('error', 'Gateway request failed'))
 
-        # ایجاد پرداخت
-        result = gateway.create_payment(
-            amount=amount,
-            description=description,
-            payer_name=user.get_display_name() if user else '',
-            payer_email=user.email if user else '',
-            payer_mobile=user.mobile if user else '',
-            callback_url=callback_url,
-        )
-
-        payment_log.gateway_request = {
-            'amount': int(amount),
-            'description': description,
-            'callback_url': callback_url,
-        }
-        payment_log.gateway_response = result
-
-        if result.get('success'):
+            # ۵. ثبت موفقیت در دیتابیس
             payment_log.mark_redirected(result.get('gateway_code'))
-            logger.info(f"Payment created: {payment_log.id} -> {gateway_config.name}")
+            payment_log.gateway_request = {'amount': int(amount), 'callback_url': callback_url}
+            payment_log.save()
+
             return {
                 'success': True,
                 'payment_log': payment_log,
                 'payment_url': result.get('payment_url'),
                 'gateway_code': result.get('gateway_code'),
             }
-        else:
-            payment_log.mark_failed(result.get('error', 'Gateway error'))
-            logger.error(f"Payment creation failed: {result.get('error')}")
-            return {
-                'success': False,
-                'error': result.get('error', 'Payment creation failed'),
-                'payment_log': payment_log,
-            }
+
+        except Exception as e:
+            # هر خطایی اینجا رخ دهد، تراکنش دیتابیس خودکار Rollback می‌شود
+            logger.error(f"Payment Creation Error: {str(e)}")
+            raise e
 
     @classmethod
     @db_transaction.atomic
     def verify_payment(cls, payment_log_id, callback_data=None):
         try:
-            payment_log = PaymentLog.objects.select_related(
-                'gateway', 'user', 'invoice'
-            ).get(id=payment_log_id)
+            payment_log = PaymentLog.objects.select_related('gateway', 'user', 'invoice').get(id=payment_log_id)
         except PaymentLog.DoesNotExist:
             return {'success': False, 'error': 'Payment log not found.'}
 
-        if payment_log.is_verified:
-            return {
-                'success': True,
-                'already_verified': True,
-                'payment_log': payment_log,
-            }
-
-        if callback_data:
-            payment_log.callback_data = callback_data
-            payment_log.save()
+        # اگر قبلاً وریفای شده، خارج شو
+        if payment_log.status == PaymentStatus.VERIFIED:
+            return {'success': True, 'already_verified': True, 'payment_log': payment_log}
 
         gateway = cls.get_gateway_instance(payment_log.gateway)
-
-        # پارامترهای اضافی برای PayPing v3
-        extra_kwargs = {}
-        if payment_log.gateway.gateway_type == GatewayType.PAYPING:
-            payment_ref_id = callback_data.get('paymentRefId') if callback_data else None
-            if not payment_ref_id:
-                # ممکن است در data تودرتو باشد (callback POST)
-                payment_ref_id = callback_data.get('data', {}).get('paymentRefId')
-            extra_kwargs['payment_ref_id'] = payment_ref_id
-
-        result = gateway.verify_payment(
-            gateway_code=payment_log.gateway_code,
-            amount=payment_log.amount,
-            **extra_kwargs
-        )
+        result = gateway.verify_payment(gateway_code=payment_log.gateway_code, amount=payment_log.amount)
 
         if result.get('success'):
             payment_log.mark_verified(result.get('reference_code'))
+            logger.info(f"DEBUG: Payment verified. Invoice: {payment_log.invoice}")
+            # --- این بخش رو فقط برای دیباگ گذاشتم ---
             if payment_log.invoice:
                 from apps.financial.services.invoice_service import InvoiceService
                 InvoiceService.record_payment(
                     invoice=payment_log.invoice,
-                    amount=payment_log.amount,
+                    amount=payment_log.amount,  # <--- این همون پارامتریه که کم بود
                     payment_method='online_gateway',
                     reference_code=result.get('reference_code', ''),
                     verified_by=None,
                 )
-            logger.info(f"Payment verified: {payment_log.id}")
-            return {
-                'success': True,
-                'payment_log': payment_log,
-                'reference_code': result.get('reference_code'),
-            }
-        else:
-            payment_log.mark_failed(result.get('error', 'Verification failed'))
-            return {
-                'success': False,
-                'error': result.get('error', 'Verification failed'),
-                'payment_log': payment_log,
-            }
+
+                # بررسی نوع فاکتور (اینجا رو دقت کن)
+                actual_type = str(payment_log.invoice.invoice_type)
+                print(f"DEBUG_TYPE: Invoice ID={payment_log.invoice.id} Type='{actual_type}'")
+
+                # اگر تایپ فاکتور "Wallet Charge" است
+                if "wallet" in actual_type.lower() or "charge" in actual_type.lower():
+                    from apps.accounts.services.wallet_service import WalletService
+                    if hasattr(payment_log.user, 'wallet'):
+                        WalletService.deposit(
+                            wallet=payment_log.user.wallet,
+                            amount=payment_log.amount,
+                            description=f"شارژ کیف پول",
+                            reference_id=str(payment_log.id)
+                        )
+                        print("DEBUG_SUCCESS: Wallet charged!")
+                    else:
+                        print("DEBUG_ERROR: User has no wallet!")
+                else:
+                    print("DEBUG_ERROR: Invoice type does not match 'wallet' or 'charge'!")
+
+            return {'success': True, 'payment_log': payment_log}
+
+        return {'success': False, 'error': 'Gateway verify failed'}
 
     @staticmethod
     def _get_client_ip(request):
