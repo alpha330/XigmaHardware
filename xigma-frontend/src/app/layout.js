@@ -21,7 +21,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
-      <body style={{ fontFamily: 'var(--font-vazirmatn), sans-serif' }}>
+      <body style={{ fontFamily: 'var(--font-vazirmatn)' }}>
         <ThemeRegistry>
           {/* ساختار بندی اصلی صفحه */}
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>

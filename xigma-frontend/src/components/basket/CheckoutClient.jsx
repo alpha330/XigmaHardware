@@ -1,13 +1,12 @@
 // src/components/basket/CheckoutClient.jsx
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
 import styled from '@emotion/styled';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '../../utils/apiFetch';
 import { useToast } from '../ui/ToastProvider';
 import PageLoader from  '@/components/shared/PageLoader'
-import NeshanMap from 'react-neshan-map-leaflet';
-import 'leaflet-defaulticon-compatibility';
+import dynamic from 'next/dynamic';
 
 // ================= STYLES =================
 const PageWrapper = styled.div`
@@ -251,6 +250,10 @@ const OrderTableRow = styled.div`
   }
 `;
 
+const NeshanMap = dynamic(() => import('react-neshan-map-leaflet'), {
+  ssr: false,
+});
+
 // ================= COMPONENT =================
 export default function CheckoutClient() {
   const { showToast } = useToast();
@@ -277,10 +280,17 @@ export default function CheckoutClient() {
     billing_address: '',
     customer_notes: ''
   });
-
+  const mapRef = useRef(null);
   const formatPrice = (price) => new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
 
+
   useEffect(() => {
+    const loadLeafletStyles = async () => {
+      await import('leaflet/dist/leaflet.css');
+      await import('leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css');
+      await import('leaflet-defaulticon-compatibility');
+    };
+    loadLeafletStyles();
     const fetchInitialData = async () => {
       try {
         const [cartRes, profileRes, userRes, gatewaysRes] = await Promise.all([
@@ -481,13 +491,16 @@ export default function CheckoutClient() {
             <InputGroup fullWidth>
               <Label>انتخاب موقعیت دقیق روی نقشه</Label>
               <div style={{ height: '300px', borderRadius: '8px', overflow: 'hidden' }}>
+                {/* استفاده از شرط برای جلوگیری از رندر مجدد غیرضروری */}
                 <NeshanMap
-                  mapKey="web.65dcd03c27774f60adbebfa70248785b" // کلید وب (غیر از کلید service)
+                  ref={mapRef}
+                  mapKey="web.65dcd03c27774f60adbebfa70248785b"
+                  defaultType="neshan"
                   center={coords}
                   zoom={14}
                   onChange={(e) => {
                     setCoords({ lat: e.lat, lng: e.lng });
-                    getAddressFromCoords(e.lat, e.lng); // فراخوانی تابع تبدیل مختصات به آدرس
+                    getAddressFromCoords(e.lat, e.lng);
                   }}
                 />
               </div>

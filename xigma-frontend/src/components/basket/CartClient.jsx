@@ -196,7 +196,7 @@ const CheckoutButton = styled.button`
   font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.2s;
-
+  font-family: 'var(--font-vazirmatn)';
   &:hover:not(:disabled) { background-color: ${({ theme }) => theme.colors.secondary}; }
   &:disabled { background-color: ${({ theme }) => theme.colors.border}; cursor: not-allowed; }
 `;
