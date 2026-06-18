@@ -1,6 +1,8 @@
 import requests
 from django.utils.translation import gettext_lazy as _
 from .base import BaseGateway
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class ZarinPalGateway(BaseGateway):
     name = "ZarinPal"
