@@ -6,10 +6,10 @@ echo "🚀 Marketplace Backend - DEVELOPMENT"
 echo "========================================="
 echo ""
 
-# Wait for PostgreSQL
-echo "⏳ Waiting for PostgreSQL..."
-while ! nc -z ${DB_HOST:-postgres} ${DB_PORT:-5432}; do sleep 0.5; done
-echo "✅ PostgreSQL is ready!"
+# # Wait for PostgreSQL
+# echo "⏳ Waiting for PostgreSQL..."
+# while ! nc -z ${DB_HOST:-postgres} ${DB_PORT:-5432}; do sleep 0.5; done
+# echo "✅ PostgreSQL is ready!"
 
 # Wait for Redis
 echo "⏳ Waiting for Redis..."
