@@ -83,32 +83,50 @@ const ActionButton = styled(Link)`
 
 export default function VerifyClient() {
   const searchParams = useSearchParams();
-  const hasFetched = useRef(false); // جلوگیری از فراخوانی دوگانه در React Strict Mode
+  const hasFetched = useRef(false);
 
-  const [status, setStatus] = useState('loading'); // loading, success, error
-  const [message, setMessage] = useState('در حال بررسی وضعیت پرداخت و ارتباط با بانک...');
+  const [status, setStatus] = useState('loading');
+  const [message, setMessage] = useState('در حال بررسی وضعیت پرداخت...');
   const [verifyData, setVerifyData] = useState(null);
 
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
 
-    const verifyPayment = async () => {
-      // استخراج تمام پارامترهایی که بانک در URL فرستاده است
+    const handleVerification = async () => {
       const params = Object.fromEntries(searchParams.entries());
 
-      // در درگاه‌های مختلف، شناسه تراکنش با نام‌های متفاوتی برمی‌گردد
-      // پی‌پینگ معمولاً clientrefid است، زرین‌پال Authority یا درگاه‌های دیگر log_id
-      const paymentLogId = params.clientrefid || params.Authority || params.log_id;
+      // === حالت جدید: بک‌اند مستقیم ریدایرکت کرده با status ===
+      if (params.status === 'success') {
+        setStatus('success');
+        setMessage('پرداخت شما با موفقیت انجام شد و کیف پول شارژ گردید.');
+        setVerifyData({
+          referenceCode: params.ref_id || 'ثبت شده',
+          amount: params.amount,
+          paymentLogId: params.payment_log_id
+        });
+        // TODO: در صورت وجود WalletContext، اینجا بالانس رو رفرش کن
+        return;
+      }
+
+      if (params.status === 'error') {
+        setStatus('error');
+        setMessage(params.message === 'verify_failed' 
+          ? 'تایید پرداخت ناموفق بود. لطفاً با پشتیبانی تماس بگیرید.'
+          : 'پرداخت با خطا مواجه شد.');
+        return;
+      }
+
+      // === حالت قدیمی / fallback: کال دستی verify ===
+      const paymentLogId = params.clientrefid || params.Authority || params.log_id || params.payment_log_id;
 
       if (!paymentLogId) {
         setStatus('error');
-        setMessage('شناسه تراکنش یافت نشد. به نظر می‌رسد درخواست نامعتبر است.');
+        setMessage('شناسه تراکنش یافت نشد. درخواست نامعتبر است.');
         return;
       }
 
       try {
-        // ارسال درخواست تایید به اندپوینت verify بک‌اند شما
         const res = await apiFetch(`/api/v1/payment/verify/${paymentLogId}/`, {
           method: 'POST',
           body: JSON.stringify(params),
@@ -118,25 +136,24 @@ export default function VerifyClient() {
 
         if (res.ok && data.success) {
           setStatus('success');
-          setMessage(data.message || 'پرداخت شما با موفقیت تایید شد و سفارش ثبت گردید.');
+          setMessage(data.message || 'پرداخت با موفقیت تایید شد و کیف پول شارژ گردید.');
           setVerifyData({
             paymentLogId: data.payment_log_id || paymentLogId,
-            referenceCode: data.reference_code || params.refid || 'ثبت شده'
+            referenceCode: data.reference_code || params.ref_id || 'ثبت شده'
           });
         } else {
           setStatus('error');
-          setMessage(data.error || 'پرداخت ناموفق بود یا توسط شما لغو شده است.');
+          setMessage(data.error || 'پرداخت ناموفق بود.');
           setVerifyData({ paymentLogId });
         }
-
       } catch (error) {
         console.error('Verify error:', error);
         setStatus('error');
-        setMessage('ارتباط با سرور برقرار نشد. در صورت کسر وجه، مبلغ تا ۷۲ ساعت آینده به حساب شما بازخواهد گشت.');
+        setMessage('ارتباط با سرور برقرار نشد. در صورت کسر وجه، مبلغ تا ۷۲ ساعت آینده بازگردانده می‌شود.');
       }
     };
 
-    verifyPayment();
+    handleVerification();
   }, [searchParams]);
 
   return (
@@ -159,13 +176,20 @@ export default function VerifyClient() {
 
             {verifyData?.referenceCode && (
               <DataRow>
-                <span className="label">کد پیگیری بانکی:</span>
+                <span className="label">کد پیگیری:</span>
                 <span className="value">{verifyData.referenceCode}</span>
               </DataRow>
             )}
 
-            <ActionButton href="/profile/invoices" status="success">
-              مشاهده فاکتور و سفارشات
+            {verifyData?.amount && (
+              <DataRow>
+                <span className="label">مبلغ شارژ شده:</span>
+                <span className="value">{Number(verifyData.amount).toLocaleString()} ریال</span>
+              </DataRow>
+            )}
+
+            <ActionButton href="/accounts/wallet" status="success">
+              مشاهده کیف پول
             </ActionButton>
           </>
         )}
@@ -176,16 +200,12 @@ export default function VerifyClient() {
             <Title status="error">پرداخت ناموفق</Title>
             <Message>{message}</Message>
 
-            {verifyData?.paymentLogId && (
-              <DataRow>
-                <span className="label">شناسه خطا:</span>
-                <span className="value">{verifyData.paymentLogId.split('-')[0]}</span>
-              </DataRow>
-            )}
-
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
               <ActionButton href="/basket/cart" status="error">
                 بازگشت به سبد خرید
+              </ActionButton>
+              <ActionButton href="/accounts/wallet" status="error">
+                مشاهده کیف پول
               </ActionButton>
             </div>
           </>
