@@ -26,17 +26,6 @@ class PaymentViewSet(mixins.ListModelMixin,
                      viewsets.GenericViewSet):
     """
     ViewSet مدیریت پرداخت و درگاه‌ها
-
-    Actions:
-    - list: لیست درگاه‌های فعال
-    - retrieve: جزئیات درگاه
-    - pay: ایجاد پرداخت جدید
-    - callback: بازگشت از درگاه (GET/POST)
-    - verify: تایید دستی پرداخت
-    - payment_status: وضعیت پرداخت
-    - my_payments: پرداخت‌های من
-    - active_gateways: درگاه‌های فعال برای فرانت
-    - pay_with_wallet: پرداخت مستقیم با کیف پول
     """
     queryset = PaymentGateway.objects.filter(is_active=True)
 
@@ -56,7 +45,6 @@ class PaymentViewSet(mixins.ListModelMixin,
             return [AllowAny()]
         return [IsAuthenticated()]
 
-    # ==================== ایجاد پرداخت ====================
     @action(detail=False, methods=['post'])
     def pay(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -64,7 +52,6 @@ class PaymentViewSet(mixins.ListModelMixin,
         data = serializer.validated_data
 
         try:
-            # انتخاب درگاه
             gateway = None
             if data.get('gateway_id'):
                 try:
@@ -77,7 +64,6 @@ class PaymentViewSet(mixins.ListModelMixin,
                         status=status.HTTP_404_NOT_FOUND
                     )
 
-            # دریافت فاکتور (اختیاری)
             invoice = None
             if data.get('invoice_id'):
                 from apps.financial.models import Invoice
@@ -125,19 +111,19 @@ class PaymentViewSet(mixins.ListModelMixin,
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    # ==================== Callback (پشتیبانی از PayPing و ZarinPal) ====================
+    # ==================== Callback (بهبود یافته) ====================
     @action(detail=False, methods=['get', 'post'], url_path='callback/(?P<payment_log_id>[^/.]+)')
     def callback(self, request, payment_log_id=None):
-        print(f"DEBUG: --- CALLBACK START --- PaymentID: {payment_log_id}")
+        print(f"[Callback] START - PaymentLogID: {payment_log_id}")
 
-        # 1. دریافت لاگ
         try:
             payment_log = PaymentLog.objects.select_related('gateway').get(id=payment_log_id)
         except PaymentLog.DoesNotExist:
-            print(f"DEBUG: Payment {payment_log_id} NOT FOUND!")
-            return Response({'error': 'Payment not found.'}, status=404)
+            print(f"[Callback] PaymentLog {payment_log_id} NOT FOUND")
+            # ریدایرکت به صفحه ارور فرانت‌اند
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+            return redirect(f"{frontend_url}/payment/verify?status=error&message=payment_not_found")
 
-        # 2. تجزیه داده‌ها بر اساس نوع درگاه
         gateway_type = payment_log.gateway.gateway_type if payment_log.gateway else None
         callback_data = {}
 
@@ -145,52 +131,41 @@ class PaymentViewSet(mixins.ListModelMixin,
             authority = request.GET.get('Authority')
             status_param = request.GET.get('Status')
             callback_data = {'gateway_code': authority, 'status': status_param}
-            print(f"DEBUG: ZarinPal Data: {callback_data}")
-
-        elif gateway_type == GatewayType.PAYPING:
-            # PayPing معمولاً POST می‌زند
-            data_str = request.data.get('data') or request.POST.get('data')
-            try:
-                data = json.loads(data_str) if isinstance(data_str, str) else data_str
-                callback_data = {'paymentRefId': data.get('paymentRefId'), 'amount': data.get('amount')}
-            except:
-                callback_data = request.data
-            print(f"DEBUG: PayPing Data: {callback_data}")
         else:
             callback_data = request.data if request.method == 'POST' else request.GET.dict()
-            print(f"DEBUG: Generic Gateway Data: {callback_data}")
 
-        # 3. فراخوانی سرویس تایید
-        print("DEBUG: Calling PaymentService.verify_payment...")
         try:
             result = PaymentService.verify_payment(
                 payment_log_id=payment_log_id,
                 callback_data=callback_data,
             )
-            print(f"DEBUG: PaymentService Result: {result}")
+
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
 
             if result.get('success'):
-                return Response({
-                    'success': True,
-                    'message': _('Payment verified successfully.'),
-                    'reference_code': result.get('reference_code'),
-                })
+                ref_code = result.get('reference_code', '')
+                amount = float(payment_log.amount)
+                # ریدایرکت به صفحه نتیجه موفق
+                return redirect(
+                    f"{frontend_url}/payment/verify?status=success"
+                    f"&ref_id={ref_code}&amount={amount}&payment_log_id={payment_log_id}"
+                )
             else:
-                return Response({
-                    'success': False,
-                    'error': result.get('error', 'Verification failed.')
-                }, status=status.HTTP_400_BAD_REQUEST)
+                return redirect(
+                    f"{frontend_url}/payment/verify?status=error"
+                    f"&message=verify_failed&payment_log_id={payment_log_id}"
+                )
 
         except Exception as e:
-            print(f"DEBUG: EXCEPTION IN CALLBACK: {str(e)}")
-            return Response({'error': 'Internal server error during callback.'}, status=500)
-    # ==================== تایید دستی (برای ادمین) ====================
+            print(f"[Callback] EXCEPTION: {str(e)}")
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+            return redirect(f"{frontend_url}/payment/verify?status=error&message=server_error")
+
     @action(detail=False, methods=['post'], url_path='verify/(?P<payment_log_id>[^/.]+)')
     def verify(self, request, payment_log_id=None):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # برای سازگاری با هر دو درگاه، داده‌های ارسالی را مستقیماً به سرویس می‌دهیم
         callback_data = serializer.validated_data
         try:
             result = PaymentService.verify_payment(
@@ -211,7 +186,6 @@ class PaymentViewSet(mixins.ListModelMixin,
             logger.error(f"Manual verify error: {str(e)}")
             return Response({'error': _('Verification error.')}, status=500)
 
-    # ==================== وضعیت پرداخت ====================
     @action(detail=False, methods=['get'], url_path='status/(?P<payment_log_id>[^/.]+)')
     def payment_status(self, request, payment_log_id=None):
         try:
@@ -232,7 +206,6 @@ class PaymentViewSet(mixins.ListModelMixin,
         except PaymentLog.DoesNotExist:
             return Response({'error': _('Payment not found.')}, status=404)
 
-    # ==================== لیست پرداخت‌های کاربر ====================
     @action(detail=False, methods=['get'])
     def my_payments(self, request):
         from django.db import models as db_models
@@ -258,7 +231,6 @@ class PaymentViewSet(mixins.ListModelMixin,
         serializer = PaymentLogSerializer(payments, many=True)
         return Response(serializer.data)
 
-    # ==================== درگاه‌های فعال برای فرانت ====================
     @action(detail=False, methods=['get'])
     def active_gateways(self, request):
         gateways = PaymentGateway.objects.filter(is_active=True)
@@ -280,7 +252,6 @@ class PaymentViewSet(mixins.ListModelMixin,
             })
         return Response(data)
 
-    # ==================== پرداخت با کیف پول (بدون درگاه) ====================
     @action(detail=False, methods=['post'])
     def pay_with_wallet(self, request):
         amount = request.data.get('amount')
