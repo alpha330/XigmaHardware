@@ -29,7 +29,7 @@ class ZarinPalGateway(BaseGateway):
             }
         }
         try:
-            resp = requests.post(url, json=payload, timeout=30)
+            resp = requests.post(url, json=payload, timeout=30, verify=False)
             data = resp.json()
 
             if data.get('data', {}).get('code') == 100:
@@ -57,7 +57,7 @@ class ZarinPalGateway(BaseGateway):
         print(f"[ZarinPal] Verifying - Authority: {gateway_code}, Amount: {amount}")
 
         try:
-            resp = requests.post(url, json=payload, timeout=30)
+            resp = requests.post(url, json=payload, timeout=30, verify=False)
             data = resp.json()
             print(f"[ZarinPal] Verify Response: {data}")
 
