@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 from django.db import transaction as db_transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -115,12 +116,13 @@ class PaymentService:
 
             # === منطق شارژ والت (بهبود یافته) ===
             charged_wallet = False
+            amount_decimal = Decimal(str(payment_log.amount))  # همیشه Decimal
 
             if payment_log.invoice:
                 from apps.financial.services.invoice_service import InvoiceService
                 InvoiceService.record_payment(
                     invoice=payment_log.invoice,
-                    amount=float(payment_log.amount),
+                    amount=float(amount_decimal),  # اگر سرویس invoice float می‌خواد
                     payment_method='online_gateway',
                     reference_code=str(result.get('reference_code', '')),
                     verified_by=None,
@@ -132,21 +134,21 @@ class PaymentService:
                     if hasattr(payment_log.user, 'wallet'):
                         WalletService.deposit(
                             wallet=payment_log.user.wallet,
-                            amount=float(payment_log.amount),
+                            amount=amount_decimal,   # Decimal پاس بده
                             description="شارژ کیف پول از طریق درگاه",
                             reference_id=str(payment_log.id)
                         )
                         charged_wallet = True
 
             else:
-                # اگر invoice وجود نداشت، از description چک کنیم (شارژ مستقیم والت)
+                # اگر invoice وجود نداشت (شارژ مستقیم والت)
                 desc = (payment_log.description or '').lower()
                 if 'wallet' in desc or 'شارژ' in desc or 'charge' in desc:
                     from apps.accounts.services.wallet_service import WalletService
                     if hasattr(payment_log.user, 'wallet'):
                         WalletService.deposit(
                             wallet=payment_log.user.wallet,
-                            amount=float(payment_log.amount),
+                            amount=amount_decimal,
                             description="شارژ کیف پول از طریق درگاه (مستقیم)",
                             reference_id=str(payment_log.id)
                         )
