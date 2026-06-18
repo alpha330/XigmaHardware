@@ -16,6 +16,7 @@ class WalletService:
         """
         افزایش موجودی کیف پول
         """
+        amount = Decimal(str(amount))  # همیشه Decimal کن
         if amount <= 0:
             raise ValueError('Amount must be positive')
 
@@ -23,7 +24,7 @@ class WalletService:
         transaction_obj = WalletTransaction.objects.create(
             wallet=wallet,
             transaction_type=WalletTransactionType.DEPOSIT,
-            amount=Decimal(str(amount)),
+            amount=amount,
             status=WalletTransactionStatus.COMPLETED,
             balance_before=wallet.balance,
             description=description,
@@ -45,6 +46,7 @@ class WalletService:
         """
         برداشت از کیف پول
         """
+        amount = Decimal(str(amount))
         if amount <= 0:
             raise ValueError('Amount must be positive')
 
@@ -55,7 +57,7 @@ class WalletService:
         transaction_obj = WalletTransaction.objects.create(
             wallet=wallet,
             transaction_type=WalletTransactionType.WITHDRAW,
-            amount=Decimal(str(amount)),
+            amount=amount,
             status=WalletTransactionStatus.COMPLETED,
             balance_before=wallet.balance,
             description=description,
@@ -77,6 +79,7 @@ class WalletService:
         """
         انتقال وجه بین دو کیف پول
         """
+        amount = Decimal(str(amount))
         if amount <= 0:
             raise ValueError('Amount must be positive')
 
@@ -86,7 +89,7 @@ class WalletService:
         # برداشت از مبدا
         withdraw_tx = WalletService.withdraw(
             from_wallet,
-            amount=Decimal(str(amount)),
+            amount=amount,
             description=f'Transfer to {to_wallet.user.get_display_name()} - {description}',
             reference_id=reference_id
         )
@@ -94,7 +97,7 @@ class WalletService:
         # واریز به مقصد
         deposit_tx = WalletService.deposit(
             to_wallet,
-            amount=Decimal(str(amount)),
+            amount=amount,
             description=f'Transfer from {from_wallet.user.get_display_name()} - {description}',
             reference_id=reference_id
         )
