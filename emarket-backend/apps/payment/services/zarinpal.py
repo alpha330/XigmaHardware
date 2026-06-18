@@ -8,7 +8,6 @@ class ZarinPalGateway(BaseGateway):
     supports_sandbox = True
     supports_refund = True
 
-    # آدرس‌های زرین‌پال (Sandbox و Production)
     SANDBOX_URL = "https://sandbox.zarinpal.com/pg/v4/payment/"
     PRODUCTION_URL = "https://api.zarinpal.com/pg/v4/payment/"
 
@@ -16,7 +15,6 @@ class ZarinPalGateway(BaseGateway):
         super().__init__(config)
         self.base_url = self.SANDBOX_URL if self.is_test else self.PRODUCTION_URL
 
-    # -------------------- ایجاد پرداخت --------------------
     def create_payment(self, amount, description, payer_name, payer_email, payer_mobile, callback_url):
         url = f"{self.base_url}request.json"
 
@@ -26,19 +24,16 @@ class ZarinPalGateway(BaseGateway):
             "description": description,
             "callback_url": callback_url,
             "metadata": {
-                # 🎯 اصلاح: تبدیل اجباری به رشته
                 "mobile": str(payer_mobile) if payer_mobile else '',
                 "email": str(payer_email) if payer_email else ''
             }
         }
-        print(payload)
         try:
             resp = requests.post(url, json=payload, timeout=30)
             data = resp.json()
 
             if data.get('data', {}).get('code') == 100:
                 authority = data['data']['authority']
-                # آدرس پرداخت زرین‌پال
                 payment_url = f"https://{'sandbox' if self.is_test else 'www'}.zarinpal.com/pg/StartPay/{authority}"
                 return {
                     'success': True,
@@ -51,7 +46,6 @@ class ZarinPalGateway(BaseGateway):
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    # -------------------- تأیید پرداخت --------------------
     def verify_payment(self, gateway_code, amount, **kwargs):
         url = f"{self.base_url}verify.json"
         payload = {
@@ -60,27 +54,38 @@ class ZarinPalGateway(BaseGateway):
             "authority": gateway_code
         }
 
-        # 🎯 این لاگ رو اضافه کن تا مطمئن بشیم زرین‌پال داره تاییدیه رو برمی‌گردونه
-        print(f"DEBUG: Verifying ZarinPal - Authority: {gateway_code}, Amount: {amount}")
+        print(f"[ZarinPal] Verifying - Authority: {gateway_code}, Amount: {amount}")
 
         try:
             resp = requests.post(url, json=payload, timeout=30)
             data = resp.json()
+            print(f"[ZarinPal] Verify Response: {data}")
 
-            print(f"DEBUG: ZarinPal Response: {data}")
+            code = data.get('data', {}).get('code')
 
-            if data.get('data', {}).get('code') == 100:
+            if code == 100:
                 return {
                     'success': True,
                     'reference_code': str(data['data']['ref_id']),
                     'data': data,
                 }
+            elif code == 101:
+                # Already verified - treat as success
+                return {
+                    'success': True,
+                    'already_verified': True,
+                    'reference_code': str(data['data'].get('ref_id', gateway_code)),
+                    'data': data,
+                }
             else:
-                return {'success': False, 'error': f"Verification failed: {data.get('errors')}"}
+                return {
+                    'success': False,
+                    'error': f"Verification failed with code: {code}",
+                    'data': data.get('errors')
+                }
         except Exception as e:
+            print(f"[ZarinPal] Verify Exception: {str(e)}")
             return {'success': False, 'error': str(e)}
 
-    # -------------------- متدهای اجباری پایه --------------------
     def get_payment_info(self, gateway_code):
-        # زرین‌پال متد استعلام تکی به این شکل ندارد، معمولاً از طریق verify چک می‌شود
         return {'success': False, 'error': 'Not supported'}
