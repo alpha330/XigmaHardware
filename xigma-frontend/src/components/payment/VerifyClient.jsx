@@ -9,7 +9,7 @@ import { apiFetch } from '../../utils/apiFetch';
 
 // ================= STYLES =================
 const PageWrapper = styled.div`
-  max-width: 600px;
+  max-width: 620px;
   margin: 4rem auto;
   padding: 0 2rem;
   text-align: center;
@@ -21,139 +21,142 @@ const StatusCard = styled.div`
     status === 'success' ? theme.colors.success :
     status === 'error' ? theme.colors.error : theme.colors.border};
   border-radius: 16px;
-  padding: 3rem 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  padding: 3rem 2.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
 `;
 
-const IconWrapper = styled.div`
-  font-size: 4rem;
+const Icon = styled.div`
+  font-size: 4.5rem;
   margin-bottom: 1.5rem;
-  animation: ${({ status }) => status === 'loading' ? 'pulse 1.5s infinite' : 'none'};
-
-  @keyframes pulse {
-    0% { opacity: 0.5; transform: scale(0.95); }
-    50% { opacity: 1; transform: scale(1.05); }
-    100% { opacity: 0.5; transform: scale(0.95); }
-  }
 `;
 
 const Title = styled.h1`
-  font-size: 1.6rem;
+  font-size: 1.7rem;
+  margin-bottom: 1rem;
   color: ${({ theme, status }) =>
     status === 'success' ? theme.colors.success :
     status === 'error' ? theme.colors.error : theme.colors.textMain};
-  margin-bottom: 1rem;
 `;
 
 const Message = styled.p`
   color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 1.05rem;
+  line-height: 1.7;
   margin-bottom: 2rem;
 `;
 
-const DataRow = styled.div`
-  display: flex;
-  justify-content: space-between;
+const InfoBox = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
   border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 10px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
   font-size: 0.95rem;
 
+  .row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+  }
   .label { color: ${({ theme }) => theme.colors.textMuted}; }
-  .value { font-weight: bold; color: ${({ theme }) => theme.colors.textMain}; font-family: monospace; letter-spacing: 1px; }
+  .value { font-weight: 600; color: ${({ theme }) => theme.colors.textMain}; font-family: monospace; }
 `;
 
-const ActionButton = styled(Link)`
+const Button = styled(Link)`
   display: inline-block;
-  background-color: ${({ theme, status }) =>
-    status === 'error' ? theme.colors.error : theme.colors.primary};
-  color: #fff;
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  font-weight: bold;
+  background-color: ${({ theme, variant }) =>
+    variant === 'success' ? theme.colors.success : theme.colors.primary};
+  color: white;
+  padding: 14px 32px;
+  border-radius: 10px;
+  font-weight: 600;
   text-decoration: none;
-  margin-top: 1.5rem;
-  transition: opacity 0.2s;
+  margin-top: 1rem;
+  transition: all 0.2s;
 
-  &:hover { opacity: 0.9; }
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
 `;
 
 export default function VerifyClient() {
   const searchParams = useSearchParams();
-  const hasFetched = useRef(false);
+  const hasProcessed = useRef(false);
 
   const [status, setStatus] = useState('loading');
   const [message, setMessage] = useState('در حال بررسی وضعیت پرداخت...');
-  const [verifyData, setVerifyData] = useState(null);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
+    if (hasProcessed.current) return;
+    hasProcessed.current = true;
 
-    const handleVerification = async () => {
-      const params = Object.fromEntries(searchParams.entries());
+    const params = Object.fromEntries(searchParams.entries());
 
-      // === حالت جدید: بک‌اند مستقیم ریدایرکت کرده با status ===
+    // === اولویت با URL (جلوگیری از CORS) ===
+    if (params.status) {
       if (params.status === 'success') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setStatus('success');
-        setMessage('پرداخت شما با موفقیت انجام شد و کیف پول شارژ گردید.');
-        setVerifyData({
-          referenceCode: params.ref_id || 'ثبت شده',
+        setMessage('پرداخت با موفقیت انجام شد و کیف پول شارژ گردید.');
+        setData({
+          refId: params.ref_id || params.Authority,
+          paymentLogId: params.payment_log_id,
           amount: params.amount,
-          paymentLogId: params.payment_log_id
         });
-        // TODO: در صورت وجود WalletContext، اینجا بالانس رو رفرش کن
-        return;
-      }
-
-      if (params.status === 'error') {
+      } else {
         setStatus('error');
-        setMessage(params.message === 'verify_failed' 
-          ? 'تایید پرداخت ناموفق بود. لطفاً با پشتیبانی تماس بگیرید.'
-          : 'پرداخت با خطا مواجه شد.');
-        return;
+        setMessage(
+          params.message === 'verify_failed'
+            ? 'تایید پرداخت توسط درگاه ناموفق بود.'
+            : params.message || 'پرداخت با خطا مواجه شد.'
+        );
+        setData({ paymentLogId: params.payment_log_id });
       }
+      return;
+    }
 
-      // === حالت قدیمی / fallback: کال دستی verify ===
-      const paymentLogId = params.clientrefid || params.Authority || params.log_id || params.payment_log_id;
+    // === حالت قدیمی (اگر status در URL نبود) ===
+    const paymentLogId = params.clientrefid || params.Authority || params.log_id || params.payment_log_id;
 
-      if (!paymentLogId) {
-        setStatus('error');
-        setMessage('شناسه تراکنش یافت نشد. درخواست نامعتبر است.');
-        return;
-      }
+    if (!paymentLogId) {
+      setStatus('error');
+      setMessage('شناسه تراکنش یافت نشد.');
+      return;
+    }
 
+    // کال API فقط در حالت قدیمی
+    const verifyPayment = async () => {
       try {
         const res = await apiFetch(`/api/v1/payment/verify/${paymentLogId}/`, {
           method: 'POST',
           body: JSON.stringify(params),
         });
 
-        const data = await res.json();
+        const result = await res.json();
 
-        if (res.ok && data.success) {
+        if (res.ok && result.success) {
           setStatus('success');
-          setMessage(data.message || 'پرداخت با موفقیت تایید شد و کیف پول شارژ گردید.');
-          setVerifyData({
-            paymentLogId: data.payment_log_id || paymentLogId,
-            referenceCode: data.reference_code || params.ref_id || 'ثبت شده'
+          setMessage(result.message || 'پرداخت با موفقیت تایید شد.');
+          setData({
+            refId: result.reference_code,
+            paymentLogId: result.payment_log_id || paymentLogId,
           });
         } else {
           setStatus('error');
-          setMessage(data.error || 'پرداخت ناموفق بود.');
-          setVerifyData({ paymentLogId });
+          setMessage(result.error || 'پرداخت ناموفق بود.');
+          setData({ paymentLogId });
         }
-      } catch (error) {
-        console.error('Verify error:', error);
+      } catch (err) {
+        console.error(err);
         setStatus('error');
-        setMessage('ارتباط با سرور برقرار نشد. در صورت کسر وجه، مبلغ تا ۷۲ ساعت آینده بازگردانده می‌شود.');
+        setMessage('خطا در ارتباط با سرور. در صورت کسر وجه، مبلغ تا ۷۲ ساعت آینده بازگردانده می‌شود.');
       }
     };
 
-    handleVerification();
+    verifyPayment();
   }, [searchParams]);
 
   return (
@@ -162,51 +165,60 @@ export default function VerifyClient() {
 
         {status === 'loading' && (
           <>
-            <IconWrapper status="loading">⏳</IconWrapper>
-            <Title status="loading">در حال بررسی تراکنش</Title>
+            <Icon>⏳</Icon>
+            <Title status="loading">در حال بررسی تراکنش...</Title>
             <Message>{message}</Message>
           </>
         )}
 
         {status === 'success' && (
           <>
-            <IconWrapper status="success">✅</IconWrapper>
-            <Title status="success">پرداخت موفقیت‌آمیز بود</Title>
+            <Icon>✅</Icon>
+            <Title status="success">پرداخت موفق بود</Title>
             <Message>{message}</Message>
 
-            {verifyData?.referenceCode && (
-              <DataRow>
-                <span className="label">کد پیگیری:</span>
-                <span className="value">{verifyData.referenceCode}</span>
-              </DataRow>
+            {data && (
+              <InfoBox>
+                {data.refId && (
+                  <div className="row">
+                    <span className="label">کد پیگیری:</span>
+                    <span className="value">{data.refId}</span>
+                  </div>
+                )}
+                {data.amount && (
+                  <div className="row">
+                    <span className="label">مبلغ شارژ شده:</span>
+                    <span className="value">{Number(data.amount).toLocaleString()} ریال</span>
+                  </div>
+                )}
+                {data.paymentLogId && (
+                  <div className="row">
+                    <span className="label">شناسه تراکنش:</span>
+                    <span className="value">{data.paymentLogId}</span>
+                  </div>
+                )}
+              </InfoBox>
             )}
 
-            {verifyData?.amount && (
-              <DataRow>
-                <span className="label">مبلغ شارژ شده:</span>
-                <span className="value">{Number(verifyData.amount).toLocaleString()} ریال</span>
-              </DataRow>
-            )}
-
-            <ActionButton href="/accounts/wallet" status="success">
+            <Button href="/accounts/wallet" variant="success">
               مشاهده کیف پول
-            </ActionButton>
+            </Button>
           </>
         )}
 
         {status === 'error' && (
           <>
-            <IconWrapper status="error">❌</IconWrapper>
+            <Icon>❌</Icon>
             <Title status="error">پرداخت ناموفق</Title>
             <Message>{message}</Message>
 
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-              <ActionButton href="/basket/cart" status="error">
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button href="/basket/cart" variant="error">
                 بازگشت به سبد خرید
-              </ActionButton>
-              <ActionButton href="/accounts/wallet" status="error">
+              </Button>
+              <Button href="/accounts/wallet" variant="error">
                 مشاهده کیف پول
-              </ActionButton>
+              </Button>
             </div>
           </>
         )}

@@ -1,251 +1,201 @@
 // src/components/market/PaymentVerifyClient.jsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styled from '@emotion/styled';
-import { keyframes } from '@emotion/react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { apiFetch } from '../../utils/apiFetch';
-import { useToast } from '../ui/ToastProvider';
 import Link from 'next/link';
-
-// ================= STYLES =================
-
-// انیمیشن چرخش برای حالت Loading
-const spin = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-`;
+import { useSearchParams } from 'next/navigation';
 
 const PageWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 80vh;
-  background-color: ${({ theme }) => theme.colors.background};
-  padding: 2rem;
-`;
-
-const ResultCard = styled.div`
-  background-color: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 16px;
-  padding: 3rem 2rem;
-  max-width: 500px;
-  width: 100%;
+  max-width: 620px;
+  margin: 4rem auto;
+  padding: 0 2rem;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 `;
 
-const IconWrapper = styled.div`
-  font-size: 5rem;
-  margin-bottom: 1.5rem;
+const StatusCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme, status }) =>
+    status === 'success' ? theme.colors.success :
+    status === 'error' ? theme.colors.error : theme.colors.border};
+  border-radius: 16px;
+  padding: 3rem 2.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+`;
 
-  // استایل‌دهی به آیکون لودینگ
-  .spinner {
-    display: inline-block;
-    width: 80px;
-    height: 80px;
-    border: 6px solid ${({ theme }) => theme.colors.border};
-    border-top-color: ${({ theme }) => theme.colors.primary};
-    border-radius: 50%;
-    animation: ${spin} 1s linear infinite;
-  }
+const Icon = styled.div`
+  font-size: 4.5rem;
+  margin-bottom: 1.5rem;
 `;
 
 const Title = styled.h1`
-  font-size: 1.8rem;
+  font-size: 1.7rem;
+  margin-bottom: 1rem;
   color: ${({ theme, status }) =>
     status === 'success' ? theme.colors.success :
-    status === 'error' ? theme.colors.error :
-    theme.colors.textMain};
-  margin-bottom: 1rem;
+    status === 'error' ? theme.colors.error : theme.colors.textMain};
 `;
 
 const Message = styled.p`
   color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: 1.05rem;
+  line-height: 1.7;
   margin-bottom: 2rem;
 `;
 
-const DetailsBox = styled.div`
+const InfoBox = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  text-align: right;
   border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 10px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  font-size: 0.95rem;
 
-  div {
+  .row {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.8rem;
-    font-size: 0.95rem;
-
-    &:last-child { margin-bottom: 0; }
-
-    span.label { color: ${({ theme }) => theme.colors.textMuted}; }
-    span.value { font-weight: bold; color: ${({ theme }) => theme.colors.textMain}; font-family: monospace; }
+    margin-bottom: 0.6rem;
   }
+  .label { color: ${({ theme }) => theme.colors.textMuted}; }
+  .value { font-weight: 600; color: ${({ theme }) => theme.colors.textMain}; font-family: monospace; }
 `;
 
-const ActionButtons = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+const Button = styled(Link)`
+  display: inline-block;
+  background-color: ${({ theme, variant }) =>
+    variant === 'success' ? theme.colors.success : theme.colors.primary};
+  color: white;
+  padding: 14px 32px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  margin-top: 1rem;
+  transition: all 0.2s;
 
-  a, button {
-    width: 100%;
-    padding: 1rem;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 1rem;
-    text-align: center;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    text-decoration: none;
-    border: none;
-  }
-
-  .primary {
-    background-color: ${({ theme }) => theme.colors.primary};
-    color: #fff;
-    &:hover { opacity: 0.9; }
-  }
-
-  .secondary {
-    background-color: transparent;
-    color: ${({ theme }) => theme.colors.textMain};
-    border: 1px solid ${({ theme }) => theme.colors.border};
-    &:hover { background-color: ${({ theme }) => theme.colors.background}; }
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
   }
 `;
 
 export default function PaymentVerifyClient() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const { showToast } = useToast();
+  const hasProcessed = useRef(false);
 
-  const [verifyState, setVerifyState] = useState('loading'); // 'loading' | 'success' | 'error'
-  const [paymentData, setPaymentData] = useState(null);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [status, setStatus] = useState('loading');
+  const [message, setMessage] = useState('در حال بررسی وضعیت پرداخت...');
+  const [data, setData] = useState(null);
 
   useEffect(() => {
-    // گرفتن پارامترهای زرین‌پال از URL
-    const authority = searchParams.get('Authority');
-    const status = searchParams.get('Status');
+    if (hasProcessed.current) return;
+    hasProcessed.current = true;
 
-    if (!authority) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setVerifyState('error');
-      setErrorMessage('اطلاعات پرداخت نامعتبر است.');
-      return;
-    }
+    const params = Object.fromEntries(searchParams.entries());
 
-    // اگر کاربر در درگاه انصراف داده باشد
-    if (status === 'NOK') {
-      setVerifyState('error');
-      setErrorMessage('پرداخت توسط شما لغو شد یا با خطا مواجه گردید.');
-      return;
-    }
+    // === تشخیص قوی وضعیت از URL ===
+    const isSuccess =
+      params.status === 'success' ||
+      params.Status === 'OK' ||
+      params.status === 'success';
 
-    // اگر Status === 'OK' بود، باید Authority را به بک‌اند بفرستیم تا تایید نهایی شود
-    const verifyPayment = async () => {
+    const isError = params.status === 'error' || params.message;
 
-
-      try {
-        // 🎯 مسیر API بک‌اند شما برای تایید زرین‌پال
-        const logId = sessionStorage.getItem('last_payment_log_id');
-
-        if (!logId) {
-            setVerifyState('error');
-            setErrorMessage('شناسه پرداخت پیدا نشد. لطفاً از طریق پروفایل کاربری وضعیت سفارش را چک کنید.');
-            return;
-        }
-        const res = await apiFetch(`/api/v1/payment/callback/${logId}/`, {
-            method: 'POST',
-            body: JSON.stringify({
-                authority: authority, // این را در body بفرستید نه در آدرس
-                status: status
-            })
+    if (isSuccess || isError) {
+      if (isSuccess) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setStatus('success');
+        setMessage('پرداخت با موفقیت انجام شد و کیف پول شارژ گردید.');
+        setData({
+          refId: params.ref_id || params.Authority,
+          paymentLogId: params.payment_log_id,
+          amount: params.amount,
         });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          setVerifyState('success');
-          setPaymentData(data); // شامل شماره پیگیری (ref_id) و مبلغ
-          showToast('پرداخت با موفقیت انجام شد', 'success');
-        } else {
-          setVerifyState('error');
-          setErrorMessage(data.error || 'خطا در تایید تراکنش در شبکه بانکی.');
-          showToast('تایید تراکنش با مشکل مواجه شد', 'error');
-        }
-      } catch (error) {
-        setVerifyState('error');
-        setErrorMessage('ارتباط با سرور برقرار نشد. در صورت کسر وجه، مبلغ تا ۷۲ ساعت آینده بازمی‌گردد.');
+      } else {
+        setStatus('error');
+        setMessage(
+          params.message === 'verify_failed'
+            ? 'تایید پرداخت توسط درگاه ناموفق بود.'
+            : params.message || 'پرداخت با خطا مواجه شد.'
+        );
+        setData({ paymentLogId: params.payment_log_id });
       }
-    };
+      return;
+    }
 
-    verifyPayment();
-  }, [searchParams, showToast]);
-  console.log(verifyState)
+    // === حالت قدیمی (فقط اگر هیچ status در URL نبود) ===
+    const paymentLogId = params.clientrefid || params.Authority || params.log_id || params.payment_log_id;
+
+    if (!paymentLogId) {
+      setStatus('error');
+      setMessage('شناسه تراکنش یافت نشد.');
+      return;
+    }
+
+    // در این حالت چون ممکنه پاسخ JSON نباشد، فعلاً غیرفعال می‌کنیم
+    setStatus('error');
+    setMessage('لطفاً صفحه را رفرش کنید یا دوباره تلاش کنید.');
+  }, [searchParams]);
+
   return (
     <PageWrapper>
-      <ResultCard>
+      <StatusCard status={status}>
 
-        {/* حالت در حال بررسی */}
-        {verifyState === 'loading' && (
+        {status === 'loading' && (
           <>
-            <IconWrapper><div className="spinner" /></IconWrapper>
+            <Icon>⏳</Icon>
             <Title status="loading">در حال بررسی تراکنش...</Title>
-            <Message>لطفاً منتظر بمانید و از رفرش کردن صفحه خودداری کنید. در حال ارتباط با شبکه بانکی هستیم.</Message>
+            <Message>{message}</Message>
           </>
         )}
 
-        {/* حالت پرداخت موفق */}
-        {verifyState === 'success' && (
+        {status === 'success' && (
           <>
-            <IconWrapper>✅</IconWrapper>
-            <Title status="success">پرداخت با موفقیت انجام شد</Title>
-            <Message>سفارش شما با موفقیت ثبت شد و در صف پردازش قرار گرفت. از خرید شما سپاسگزاریم.</Message>
+            <Icon>✅</Icon>
+            <Title status="success">پرداخت موفق بود</Title>
+            <Message>{message}</Message>
 
-            {paymentData && (
-              <DetailsBox>
-                <div>
-                  <span className="label">شماره پیگیری (Ref ID):</span>
-                  <span className="value">{paymentData.ref_id || 'نامشخص'}</span>
-                </div>
-                <div>
-                  <span className="label">شماره سفارش:</span>
-                  <span className="value">{paymentData.order_id || '-'}</span>
-                </div>
-              </DetailsBox>
+            {data && (
+              <InfoBox>
+                {data.refId && (
+                  <div className="row">
+                    <span className="label">کد پیگیری:</span>
+                    <span className="value">{data.refId}</span>
+                  </div>
+                )}
+                {data.amount && (
+                  <div className="row">
+                    <span className="label">مبلغ شارژ شده:</span>
+                    <span className="value">{Number(data.amount).toLocaleString()} ریال</span>
+                  </div>
+                )}
+              </InfoBox>
             )}
 
-            <ActionButtons>
-              <Link href="/profile/orders" className="primary">مشاهده وضعیت سفارش</Link>
-              <Link href="/" className="secondary">بازگشت به صفحه اصلی</Link>
-            </ActionButtons>
+            <Button href="/accounts/wallet" variant="success">
+              مشاهده کیف پول
+            </Button>
           </>
         )}
 
-        {/* حالت پرداخت ناموفق */}
-        {verifyState === 'error' && (
+        {status === 'error' && (
           <>
-            <IconWrapper>❌</IconWrapper>
-            <Title status="error">پرداخت ناموفق بود</Title>
-            <Message>{errorMessage}</Message>
+            <Icon>❌</Icon>
+            <Title status="error">پرداخت ناموفق</Title>
+            <Message>{message}</Message>
 
-            <ActionButtons>
-              <button onClick={() => router.push('/cart')} className="primary">تلاش مجدد برای پرداخت</button>
-              <Link href="/" className="secondary">بازگشت به فروشگاه</Link>
-            </ActionButtons>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button href="/basket/cart" variant="error">
+                بازگشت به سبد خرید
+              </Button>
+              <Button href="/accounts/wallet" variant="error">
+                مشاهده کیف پول
+              </Button>
+            </div>
           </>
         )}
 
-      </ResultCard>
+      </StatusCard>
     </PageWrapper>
   );
 }
