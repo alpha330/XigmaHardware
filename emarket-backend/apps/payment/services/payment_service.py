@@ -43,15 +43,12 @@ class PaymentService:
     def create_payment(cls, user, amount, description='', invoice=None,
                        gateway_config=None, callback_url=None, request=None):
 
-        # ۱. دریافت تنظیمات درگاه
         if not gateway_config:
             gateway_config = cls.get_default_gateway()
 
-        # ۲. اعتبارسنجی مبلغ
         if amount < gateway_config.min_amount or amount > gateway_config.max_amount:
             raise ValueError(_('Amount is out of allowed range.'))
 
-        # ۳. ثبت لاگ پرداخت (قبل از اتصال به درگاه)
         payment_log = PaymentLog.objects.create(
             user=user,
             gateway=gateway_config,
@@ -64,19 +61,13 @@ class PaymentService:
 
         try:
             gateway = cls.get_gateway_instance(gateway_config)
-
-            # تنظیم مقادیر مورد نیاز برای درگاه
             gateway.payment_log_id = str(payment_log.id)
-            if hasattr(user, 'profile') and user.profile:
-                gateway.national_code = user.profile.national_code or ''
 
-            # آماده‌سازی Callback URL
             if not callback_url:
                 from django.conf import settings
                 site_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
                 callback_url = f"{site_url}/api/v1/payment/callback/{payment_log.id}/"
 
-            # ۴. فراخوانی درگاه
             result = gateway.create_payment(
                 amount=amount,
                 description=description,
@@ -87,11 +78,9 @@ class PaymentService:
             )
 
             if not result.get('success'):
-                # اگر درگاه خطا داد، لاگ را به‌روز کن و تراکنش را باطل کن
                 payment_log.mark_failed(result.get('error', 'Gateway error'))
                 raise ValueError(result.get('error', 'Gateway request failed'))
 
-            # ۵. ثبت موفقیت در دیتابیس
             payment_log.mark_redirected(result.get('gateway_code'))
             payment_log.gateway_request = {'amount': int(amount), 'callback_url': callback_url}
             payment_log.save()
@@ -104,7 +93,6 @@ class PaymentService:
             }
 
         except Exception as e:
-            # هر خطایی اینجا رخ دهد، تراکنش دیتابیس خودکار Rollback می‌شود
             logger.error(f"Payment Creation Error: {str(e)}")
             raise e
 
@@ -117,7 +105,7 @@ class PaymentService:
             return {'success': False, 'error': 'Payment log not found.'}
 
         if payment_log.status == PaymentStatus.VERIFIED:
-            return {'success': True, 'payment_log': payment_log}
+            return {'success': True, 'payment_log': payment_log, 'already_verified': True}
 
         gateway = cls.get_gateway_instance(payment_log.gateway)
         result = gateway.verify_payment(gateway_code=payment_log.gateway_code, amount=payment_log.amount)
@@ -125,7 +113,9 @@ class PaymentService:
         if result.get('success'):
             payment_log.mark_verified(result.get('reference_code'))
 
-            # ثبت پرداخت در فاکتور
+            # === منطق شارژ والت (بهبود یافته) ===
+            charged_wallet = False
+
             if payment_log.invoice:
                 from apps.financial.services.invoice_service import InvoiceService
                 InvoiceService.record_payment(
@@ -136,25 +126,38 @@ class PaymentService:
                     verified_by=None,
                 )
 
-                # شارژ کیف پول (فقط اگر فاکتور شارژ است)
-                inv_type = str(payment_log.invoice.invoice_type).lower()
-                if "wallet" in inv_type or "charge" in inv_type:
+                inv_type = str(getattr(payment_log.invoice, 'invoice_type', '')).lower()
+                if 'wallet' in inv_type or 'charge' in inv_type:
                     from apps.accounts.services.wallet_service import WalletService
                     if hasattr(payment_log.user, 'wallet'):
                         WalletService.deposit(
                             wallet=payment_log.user.wallet,
                             amount=float(payment_log.amount),
-                            description="شارژ کیف پول",
+                            description="شارژ کیف پول از طریق درگاه",
                             reference_id=str(payment_log.id)
                         )
+                        charged_wallet = True
 
-            return {'success': True, 'payment_log': payment_log}
+            else:
+                # اگر invoice وجود نداشت، از description چک کنیم (شارژ مستقیم والت)
+                desc = (payment_log.description or '').lower()
+                if 'wallet' in desc or 'شارژ' in desc or 'charge' in desc:
+                    from apps.accounts.services.wallet_service import WalletService
+                    if hasattr(payment_log.user, 'wallet'):
+                        WalletService.deposit(
+                            wallet=payment_log.user.wallet,
+                            amount=float(payment_log.amount),
+                            description="شارژ کیف پول از طریق درگاه (مستقیم)",
+                            reference_id=str(payment_log.id)
+                        )
+                        charged_wallet = True
+
+            logger.info(f"Payment verified successfully. Wallet charged: {charged_wallet}")
+            return {
+                'success': True,
+                'payment_log': payment_log,
+                'reference_code': result.get('reference_code'),
+                'wallet_charged': charged_wallet
+            }
 
         return {'success': False, 'error': 'Gateway verify failed'}
-
-    @staticmethod
-    def _get_client_ip(request):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            return x_forwarded_for.split(',')[0].strip()
-        return request.META.get('REMOTE_ADDR')
