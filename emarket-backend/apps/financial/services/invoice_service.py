@@ -352,6 +352,11 @@ class InvoiceService:
         Returns:
             FinancialTransaction
         """
+        amount = Decimal(str(amount))
+
+        if not invoice.paid_amount:
+            invoice.paid_amount = Decimal('0.00')
+
         if invoice.is_fully_paid:
             raise ValueError(_('Invoice is already fully paid.'))
 
