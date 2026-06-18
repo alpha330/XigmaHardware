@@ -190,7 +190,7 @@ export default function PaymentVerifyClient() {
 
     verifyPayment();
   }, [searchParams, showToast]);
-
+  console.log(verifyState)
   return (
     <PageWrapper>
       <ResultCard>

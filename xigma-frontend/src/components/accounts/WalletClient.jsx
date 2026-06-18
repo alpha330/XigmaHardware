@@ -192,8 +192,8 @@ export default function WalletClient() {
           apiFetch('/api/v1/accounts/wallets/my_transactions/'),
           apiFetch('/api/v1/payment/gateways/active_gateways/')
         ]);
-
-        if (walletRes.ok) setWallet(await walletRes.json());
+        const wbalacneGeneral = await walletRes.json()
+        if (walletRes.ok) setWallet(wbalacneGeneral.balance);
 
         if (txRes.ok) {
           const txData = await txRes.json();
