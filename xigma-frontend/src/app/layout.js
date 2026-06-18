@@ -5,6 +5,7 @@ import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import LiveChatWidget from '../components/support/LiveChatWidget';
 import { CartProvider } from '../context/CartContext';
+import "@/styles/global.css"
 
 const vazirmatn = Vazirmatn({
   subsets: ['latin', 'arabic'],

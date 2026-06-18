@@ -1,0 +1,21 @@
+/* Vazirmatn - Font Main */
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap');
+
+html,
+body,
+* {
+  font-family: 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* برای input, button, textarea و غیره */
+input,
+button,
+textarea,
+select {
+  font-family: 'Vazirmatn', system-ui, sans-serif !important;
+}
+
+/* اگر از Emotion استفاده می‌کنید */
+div, span, p, h1, h2, h3, h4, h5, h6 {
+  font-family: 'Vazirmatn', system-ui, sans-serif;
+}
