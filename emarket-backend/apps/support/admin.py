@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 from .models import Ticket, TicketMessage, Warranty, ChatSession, ChatMessage, FAQ, FAQCategory
-
+from django.utils import timezone
 
 class TicketMessageInline(admin.TabularInline):
     """پیام‌های تیکت"""
@@ -143,7 +143,7 @@ class TicketAdmin(admin.ModelAdmin):
 
     @admin.action(description=_('Mark as CLOSED'))
     def mark_closed(self, request, queryset):
-        queryset.filter(status__in=['resolved', 'waiting_customer']).update(status='closed', closed_at=__import__('django').utils.timezone.now())
+        queryset.filter(status__in=['resolved', 'waiting_customer']).update(status='closed', closed_at=timezone.now())
         self.message_user(request, _('Tickets closed.'))
 
     @admin.action(description=_('Reopen tickets'))
@@ -168,7 +168,7 @@ class WarrantyAdmin(admin.ModelAdmin):
         return format_html('<span style="background:{};color:white;padding:2px 6px;border-radius:4px;">{}</span>', colors.get(obj.status, '#6c757d'), obj.get_status_display())
     status_badge.short_description = _('Status')
 
-    def days_remaining(self, obj): return obj.days_remaining
+    def days_remaining(self, obj): return obj.days_remaining or 0
     days_remaining.short_description = _('Days Left')
 
 

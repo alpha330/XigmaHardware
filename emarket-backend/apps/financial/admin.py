@@ -30,13 +30,15 @@ class InvoiceItemInline(admin.TabularInline):
     show_change_link = False
 
     def unit_price_display(self, obj):
-        return format_html('<b>{:,}</b>', int(obj.unit_price))
+        val = obj.unit_price if obj.unit_price is not None else 0
+        return format_html('<b>{}</b>', f'{int(val):,}')
     unit_price_display.short_description = _('Unit Price')
 
     def total_price_display(self, obj):
+        val = obj.total_price if obj.total_price is not None else 0
         return format_html(
-            '<span style="color: #e94560; font-weight: bold;">{:,}</span>',
-            int(obj.total_price)
+            '<span style="color: #e94560; font-weight: bold;">{}</span>',
+            f'{int(val):,}'
         )
     total_price_display.short_description = _('Total')
 
@@ -59,10 +61,11 @@ class PaymentInline(admin.TabularInline):
     ordering = ['-transaction_date']
 
     def amount_display(self, obj):
+        val = obj.amount if obj.amount is not None else 0
         color = '#28a745' if obj.transaction_type in ['deposit', 'refund', 'wallet_charge'] else '#dc3545'
         return format_html(
-            '<span style="color: {}; font-weight: bold;">{:,}</span>',
-            color, int(obj.amount)
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color, f'{int(val):,}'
         )
     amount_display.short_description = _('Amount')
 
@@ -398,13 +401,15 @@ class InvoiceItemAdmin(admin.ModelAdmin):
 
     @admin.display(description=_('Unit Price'))
     def unit_price_display(self, obj):
-        return format_html('<b>{}</b>', f'{int(obj.unit_price):,}')
+        val = obj.unit_price if obj.unit_price is not None else 0
+        return format_html('<b>{}</b>', f'{int(val):,}')
 
     @admin.display(description=_('Total'))
     def total_price_display(self, obj):
+        val = obj.total_price if obj.total_price is not None else 0
         return format_html(
             '<span style="color: #e94560; font-weight: bold;">{}</span>',
-            f'{int(obj.total_price):,}'
+            f'{int(val):,}'
         )
 
     @admin.display(description=_('Created'))
@@ -513,12 +518,13 @@ class FinancialTransactionAdmin(admin.ModelAdmin):
 
     @admin.display(description=_('Amount'))
     def amount_display(self, obj):
+        val = obj.amount if obj.amount is not None else 0
         is_credit = obj.transaction_type in ['deposit', 'refund', 'wallet_charge']
         color = '#28a745' if is_credit else '#dc3545'
         prefix = '+' if is_credit else '-'
         return format_html(
-            '<span style="color: {}; font-weight: bold;">{} {:,}</span>',
-            color, prefix, int(obj.amount)
+            '<span style="color: {}; font-weight: bold;">{} {}</span>',
+            color, prefix, f'{int(val):,}'
         )
 
     @admin.display(description=_('Status'))
@@ -680,9 +686,11 @@ class FinancialReportAdmin(admin.ModelAdmin):
     def summary_stats(self, obj):
         return format_html(
             '<b>{}</b> invoices<br/>'
-            '<span style="color: #28a745;">{:,} paid</span><br/>'
-            '<span style="color: #e94560;">{:,} disc</span>',
-            obj.total_invoices, int(obj.total_paid), int(obj.total_discount)
+            '<span style="color: #28a745;">{} paid</span><br/>'
+            '<span style="color: #e94560;">{} disc</span>',
+            obj.total_invoices,
+            f'{int(obj.total_paid):,}',
+            f'{int(obj.total_discount):,}'
         )
 
     @admin.display(description=_('Created'))

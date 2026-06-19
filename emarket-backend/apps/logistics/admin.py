@@ -183,10 +183,10 @@ class UserAddressAdmin(admin.ModelAdmin):
 
     @admin.display(description=_('GPS'))
     def gps_link(self, obj):
-        if obj.latitude and obj.longitude:
+        if obj.latitude is not None and obj.longitude is not None:
             return format_html(
                 '<a href="https://maps.google.com/?q={},{}" target="_blank">📍 {:.4f}, {:.4f}</a>',
-                obj.latitude, obj.longitude
+                float(obj.latitude), float(obj.longitude)
             )
         return '❌ No GPS'
 
@@ -316,12 +316,13 @@ class CourierAdmin(admin.ModelAdmin):
 
     @admin.display(description=_('Rating'))
     def rating_stars(self, obj):
-        stars = '⭐' * int(obj.rating)
-        return format_html('{} <small>({})</small>', stars, float(obj.rating))
+        rating = obj.rating if obj.rating is not None else 0
+        stars = '⭐' * int(rating)
+        return format_html('{} <small>({})</small>', stars, float(rating))
 
     @admin.display(description=_('Success'))
     def success_rate_display(self, obj):
-        rate = obj.success_rate
+        rate = obj.success_rate if obj.success_rate is not None else 0
         color = '#28a745' if rate > 90 else '#ffc107' if rate > 70 else '#dc3545'
         return format_html(
             '<span style="color:{}; font-weight:bold;">{}%</span>',
@@ -464,14 +465,15 @@ class ShipmentAdmin(admin.ModelAdmin):
 
     @admin.display(description=_('Cost'))
     def cost_display(self, obj):
+        cost = obj.customer_cost if obj.customer_cost is not None else 0
         return format_html(
-            '<span style="color:#e94560;">{:,}</span>',
-            int(obj.customer_cost)
+            '<span style="color:#e94560;">{}</span>',
+            f'{int(cost):,}'
         )
 
     @admin.display(description=_('Distance'))
     def distance_display(self, obj):
-        if obj.distance_km:
+        if obj.distance_km is not None:
             return f'{float(obj.distance_km):.1f} km'
         return '-'
 

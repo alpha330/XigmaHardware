@@ -24,7 +24,7 @@ class ChatSession(models.Model):
         ordering = ['-started_at']
 
     def __str__(self):
-        return f"Chat {self.id[:8]} - {self.user.get_display_name()}"
+        return f"Chat {str(self.id)[:8]} - {self.user.get_display_name()}"
 
 
 class ChatMessage(models.Model):

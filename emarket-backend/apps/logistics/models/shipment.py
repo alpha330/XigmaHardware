@@ -157,7 +157,7 @@ class Shipment(models.Model):
         ]
 
     def __str__(self):
-        return f"📦 Shipment #{self.id[:8]} - {self.get_status_display()}"
+        return f"📦 Shipment #{str(self.id)[:8]} - {self.get_status_display()}"
 
     @property
     def is_delivered(self):

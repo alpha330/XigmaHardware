@@ -265,8 +265,8 @@ class ProductCategoryAdmin(admin.ModelAdmin):
 class BrandSeriesInline(admin.TabularInline):
     model = BrandSeries
     extra = 1
-    fields = ['name', 'generation', 'year_released', 'is_active']
-
+    fields = ['name', 'slug','generation', 'year_released', 'is_active']
+    prepopulated_fields = {'slug': ('name',)}
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
