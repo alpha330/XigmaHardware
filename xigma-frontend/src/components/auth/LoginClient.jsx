@@ -67,11 +67,12 @@ export default function LoginClient() {
         body: JSON.stringify({
             otp_id: otpData.otp_id,
             mobile: formData.email_or_mobile,
-            code
+            code: code,
         })
       });
 
       const data = await res.json();
+
       if (!res.ok) throw new Error(data.error || 'کد نامعتبر است.');
       saveTokens(data.tokens);
     } catch (error) {
