@@ -60,30 +60,30 @@ class EmailRegisterSerializer(serializers.Serializer):
         default=UserRole.CLIENT,
         required=False
     )
-    
+
     def validate_email(self, value):
         """بررسی یکتایی ایمیل"""
         email = value.lower().strip()
-        
+
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError(
                 _('This email is already registered.')
             )
-        
+
         return email
-    
+
     def validate_password_confirm(self, value):
         """بررسی تطابق رمز عبور"""
         data = self.get_initial()
         password = data.get('password')
-        
+
         if password != value:
             raise serializers.ValidationError(
                 _('Passwords do not match.')
             )
-        
+
         return value
-    
+
     def validate(self, data):
         """حذف password_confirm از داده‌های نهایی"""
         data.pop('password_confirm', None)
@@ -117,16 +117,16 @@ class MobileRegisterSerializer(serializers.Serializer):
         allow_blank=True,
         max_length=150
     )
-    
+
     def validate_mobile(self, value):
         """بررسی یکتایی موبایل"""
         mobile = value.strip()
-        
+
         if User.objects.filter(mobile=mobile).exists():
             raise serializers.ValidationError(
                 _('This mobile number is already registered.')
             )
-        
+
         return mobile
 
 
@@ -157,28 +157,17 @@ class LoginSerializer(serializers.Serializer):
         max_length=6,
         min_length=6,
     )
-    
+
     def validate(self, data):
-        """اعتبارسنجی ترکیبی"""
         email = data.get('email')
         mobile = data.get('mobile')
-        password = data.get('password')
-        otp_code = data.get('otp_code')
-        
-        # باید حداقل یکی از ایمیل یا موبایل وجود داشته باشد
+
         if not email and not mobile:
             raise serializers.ValidationError({
                 'email': _('Email or mobile is required.'),
                 'mobile': _('Email or mobile is required.'),
             })
-        
-        # باید حداقل یکی از رمز عبور یا OTP وجود داشته باشد
-        if not password and not otp_code:
-            raise serializers.ValidationError({
-                'password': _('Password or OTP is required.'),
-                'otp_code': _('Password or OTP is required.'),
-            })
-        
+
         return data
 
 
@@ -214,7 +203,7 @@ class OTPSerializer(serializers.Serializer):
         default='login',
         required=False
     )
-    
+
     def validate_code(self, value):
         """بررسی عددی بودن کد"""
         if not value.isdigit():
@@ -253,30 +242,30 @@ class PasswordChangeSerializer(serializers.Serializer):
             'required': _('Password confirmation is required.'),
         }
     )
-    
+
     def validate_old_password(self, value):
         """بررسی صحت رمز عبور فعلی"""
         user = self.context['request'].user
-        
+
         if not user.check_password(value):
             raise serializers.ValidationError(
                 _('Current password is incorrect.')
             )
-        
+
         return value
-    
+
     def validate(self, data):
         """بررسی تطابق رمزهای جدید"""
         if data['new_password'] != data['new_password_confirm']:
             raise serializers.ValidationError({
                 'new_password_confirm': _('New passwords do not match.')
             })
-        
+
         if data['old_password'] == data['new_password']:
             raise serializers.ValidationError({
                 'new_password': _('New password must be different from current password.')
             })
-        
+
         return data
 
 
@@ -290,11 +279,11 @@ class PasswordResetRequestSerializer(serializers.Serializer):
             'required': _('Email or mobile is required.'),
         }
     )
-    
+
     def validate_email_or_mobile(self, value):
         """تشخیص ایمیل یا موبایل"""
         value = value.strip()
-        
+
         if '@' in value:
             # ایمیل
             from django.core.validators import validate_email
@@ -307,7 +296,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
         else:
             # موبایل
             validate_iranian_phone(value)
-        
+
         return value
 
 
@@ -334,12 +323,12 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         required=False,
         max_length=6,
     )
-    
+
     def validate(self, data):
         """بررسی تطابق رمزها"""
         if data['new_password'] != data['new_password_confirm']:
             raise serializers.ValidationError({
                 'new_password_confirm': _('Passwords do not match.')
             })
-        
+
         return data

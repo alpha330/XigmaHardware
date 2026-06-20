@@ -12,9 +12,9 @@ echo ""
 # echo "✅ PostgreSQL is ready!"
 
 # Wait for Redis
-echo "⏳ Waiting for Redis..."
-while ! nc -z ${REDIS_HOST:-redis} ${REDIS_PORT:-6379}; do sleep 0.5; done
-echo "✅ Redis is ready!"
+# echo "⏳ Waiting for Redis..."
+# while ! nc -z ${REDIS_HOST:-redis} ${REDIS_PORT:-6379}; do sleep 0.5; done
+# echo "✅ Redis is ready!"
 
 # Wait for MailHog
 echo "⏳ Waiting for MailHog..."

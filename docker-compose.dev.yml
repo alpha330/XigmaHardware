@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
     container_name: marketplace_postgres_dev
     restart: unless-stopped
     env_file:
-      - .env.dev
+      - .env
     environment:
       POSTGRES_DB: ${DB_NAME:-marketplace_dev}
       POSTGRES_USER: ${DB_USER:-postgres}
@@ -47,12 +45,16 @@ services:
     container_name: marketplace_backend_dev
     restart: unless-stopped
     env_file:
-      - .env.dev
+      - .env
     environment:
+      - DB_HOST=postgres
       - REDIS_HOST=redis
       - EMAIL_HOST=mailhog
       - EMAIL_PORT=1025
       - CELERY_BROKER_URL=redis://redis:6379/1
+      - GHASEDAK_API_KEY=${GHASEDAK_API_KEY}
+      - GHASEDAK_LINE_NUMBER=${GHASEDAK_LINE_NUMBER}
+      - GHASEDAK_OTP_TEMPLATE=${GHASEDAK_OTP_TEMPLATE}
     depends_on:
       - postgres
       - redis
@@ -72,22 +74,24 @@ services:
       dockerfile: Dockerfile.dev
     container_name: marketplace_celery_worker_dev
     restart: unless-stopped
-    entrypoint: []                          # ✅ ENTRYPOINT رو خالی کن
+    entrypoint: []
     command: >
-      sh -c "
-      sleep 5 &&
-      celery -A config worker -l info --concurrency=4
-      "
+      sh -c "sleep 5 && celery -A config worker -l info --concurrency=4"
     env_file:
-      - .env.dev
+      - .env
     environment:
+      - DB_HOST=postgres
       - REDIS_HOST=redis
       - EMAIL_HOST=mailhog
+      - EMAIL_PORT=1025
       - CELERY_BROKER_URL=redis://redis:6379/1
-      - DJANGO_SETTINGS_MODULE=config.settings.dev
+      - GHASEDAK_API_KEY=${GHASEDAK_API_KEY}
+      - GHASEDAK_LINE_NUMBER=${GHASEDAK_LINE_NUMBER}
+      - GHASEDAK_OTP_TEMPLATE=${GHASEDAK_OTP_TEMPLATE}
     depends_on:
       - postgres
       - redis
+      - backend
     volumes:
       - ./emarket-backend:/app
     networks:
@@ -102,10 +106,14 @@ services:
     entrypoint: []
     command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file:
-      - .env.dev
+      - .env
     environment:
+      - DB_HOST=postgres
       - REDIS_HOST=redis
       - CELERY_BROKER_URL=redis://redis:6379/1
+      - GHASEDAK_API_KEY=${GHASEDAK_API_KEY}
+      - GHASEDAK_LINE_NUMBER=${GHASEDAK_LINE_NUMBER}
+      - GHASEDAK_OTP_TEMPLATE=${GHASEDAK_OTP_TEMPLATE}
     depends_on:
       - backend
     volumes:
@@ -126,7 +134,6 @@ services:
       - "${FLOWER_PORT:-5555}:5555"
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/1
-      - FLOWER_UNAUTHENTICATED_API=true
     depends_on:
       - redis
       - celery_worker

@@ -236,7 +236,7 @@ export default function Header() {
         });
       }
     } catch (error) {
-      console.error('Logout error:', error);
+
     } finally {
       // در هر صورت (حتی اگر سرور ارور داد) کوکی‌ها پاک شده و کاربر خارج می‌شود
       Cookies.remove('token', { path: '/' });

@@ -216,3 +216,8 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+# Ghasedak SMS Configuration
+GHASEDAK_API_KEY = os.environ.get('GHASEDAK_API_KEY', '')
+GHASEDAK_LINE_NUMBER = os.environ.get('GHASEDAK_LINE_NUMBER', '3000505')
+GHASEDAK_OTP_TEMPLATE = os.environ.get('GHASEDAK_OTP_TEMPLATE', 'XigmaAuth')

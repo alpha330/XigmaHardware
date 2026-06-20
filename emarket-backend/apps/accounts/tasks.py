@@ -19,6 +19,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
+from apps.accounts.services.sms_service import sms_service
 
 User = get_user_model()
 logger = get_task_logger(__name__)
@@ -339,55 +340,6 @@ def send_email_bulk(self, user_ids, subject, template_name, context=None):
 # SMS/OTP Tasks
 # ============================================================
 
-@shared_task(
-    name='accounts.send_otp_sms',
-    bind=True,
-    max_retries=2,
-    default_retry_delay=30,
-    rate_limit='20/m'
-)
-def send_otp_sms(self, user_id, otp_code):
-    """
-    ارسال کد OTP از طریق SMS
-
-    توجه: در محیط واقعی باید از سرویس SMS مثل کاوه‌نگار استفاده کنید
-
-    Args:
-        user_id: شناسه کاربر
-        otp_code: کد OTP
-    """
-    try:
-        user = User.objects.get(id=user_id)
-
-        if not user.mobile:
-            logger.warning(f"User {user_id} has no mobile")
-            return
-
-        # اینجا باید با سرویس SMS ادغام کنید
-        # مثال با کاوه‌نگار:
-        # from kavenegar import KavenegarAPI
-        # api = KavenegarAPI(settings.KAVENEGAR_API_KEY)
-        # params = {
-        #     'sender': settings.SMS_SENDER_NUMBER,
-        #     'receptor': user.mobile,
-        #     'message': f'کد تایید شما: {otp_code}\nMarketplace',
-        # }
-        # response = api.sms_send(params)
-
-        # در محیط توسعه فقط لاگ می‌کنیم
-        logger.info(f"[DEV] OTP for {user.mobile}: {otp_code}")
-
-        # شبیه‌سازی ارسال موفق
-        return f"OTP sent to {user.mobile}"
-
-    except User.DoesNotExist:
-        logger.error(f"User {user_id} not found")
-        return f"User {user_id} not found"
-
-    except Exception as exc:
-        logger.error(f"Failed to send OTP SMS: {str(exc)}")
-        raise self.retry(exc=exc)
-
 
 @shared_task(
     name='accounts.send_sms_notification',
@@ -658,6 +610,33 @@ def generate_user_report(report_type='daily'):
         logger.error(f"Failed to generate report: {str(e)}")
         return f"Error: {str(e)}"
 
+@shared_task
+def send_welcome_email(user_id):
+    """تسک ارسال ایمیل خوش‌آمدگویی به کاربر جدید"""
+    try:
+        user = User.objects.get(id=user_id)
+
+        subject = _('Welcome to XigmaHardware!')
+        # شما باید یک فایل HTML در مسیر templates/emails/welcome.html داشته باشید
+        html_message = render_to_string('accounts/emails/welcome.html', {
+            'user': user,
+            'site_name': 'XigmaHardware'
+        })
+
+        send_mail(
+            subject=subject,
+            message='', # متن ساده (اختیاری)
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+    except User.DoesNotExist:
+        pass
+    except Exception as e:
+        # لاگ کردن خطا در صورت نیاز
+        print(f"Error sending welcome email: {e}")
+
 
 # ============================================================
 # Monitoring & Health Tasks
@@ -681,6 +660,16 @@ def check_system_health():
             'sms_service': False,
             'timestamp': timezone.now().isoformat(),
         }
+        # بررسی SMS Service
+        try:
+            from apps.accounts.services.sms_service import sms_service
+            if sms_service.is_available():
+                # فقط بررسی موجود بودن سرویس، نه ارسال واقعی
+                health_status['sms_service'] = True
+            else:
+                health_status['sms_service'] = False
+        except Exception:
+            health_status['sms_service'] = False
 
         # بررسی دیتابیس
         try:
@@ -1015,3 +1004,56 @@ def backup_user_data(user_id):
     except Exception as e:
         logger.error(f"Failed to backup user {user_id}: {str(e)}")
         return f"Error: {str(e)}"
+
+@shared_task(
+    name='accounts.send_otp_sms',
+    bind=True,
+    max_retries=2,
+    default_retry_delay=30,
+)
+def send_otp_sms(self, mobile, code, template_name=None):
+    """
+    ارسال کد OTP از طریق SMS (قاصدک)
+
+    Args:
+        mobile: شماره موبایل
+        code: کد OTP
+        template_name: (اختیاری - اگر خالی باشد مستقیم ارسال می‌شود)
+    """
+    logger.info(f"Sending OTP to {mobile}: {code}")
+
+    if template_name:
+        # با قالب
+        result = sms_service.send_otp(mobile, code, template_name)
+    else:
+        # مستقیم بدون قالب
+        result = sms_service.send_otp_direct(mobile, code)
+
+    if not result.get('success'):
+        logger.error(f"OTP SMS failed: {result.get('error')}")
+        raise self.retry(exc=Exception(result.get('error')))
+
+    return f"OTP sent to {mobile}"
+
+
+@shared_task(
+    name='accounts.send_notification_sms',
+    bind=True,
+    max_retries=2,
+    default_retry_delay=30,
+)
+def send_notification_sms(self, mobile, message):
+    """
+    ارسال پیامک اطلاع‌رسانی
+
+    Args:
+        mobile: شماره موبایل
+        message: متن پیام
+    """
+    result = sms_service.send_single(mobile, message)
+
+    if not result.get('success'):
+        logger.error(f"Notification SMS failed: {result.get('error')}")
+        raise self.retry(exc=Exception(result.get('error')))
+
+    return f"SMS sent to {mobile}"

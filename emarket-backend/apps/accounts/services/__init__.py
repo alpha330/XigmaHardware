@@ -3,6 +3,7 @@ from .user_service import UserService
 from .profile_service import ProfileService
 from .wallet_service import WalletService
 from .device_service import DeviceService
+from .sms_service import sms_service, GhasedakSMSService
 
 __all__ = [
     'AuthService',
@@ -10,4 +11,6 @@ __all__ = [
     'ProfileService',
     'WalletService',
     'DeviceService',
+    'sms_service',
+    'GhasedakSMSService',
 ]
