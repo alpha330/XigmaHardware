@@ -70,7 +70,7 @@ export default function LoginClient() {
             code: code,
         })
       });
-
+      console.log(otpData)
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || 'کد نامعتبر است.');
