@@ -68,6 +68,8 @@ class PaymentService:
                 from django.conf import settings
                 site_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
                 callback_url = f"{site_url}/api/v1/payment/callback/{payment_log.id}/"
+                print(f"🚨 [CALLBACK_URL] Final URL sent to gateway: {callback_url}")
+                print(f"🚨 [CALLBACK_URL] PaymentLog ID: {payment_log.id}")
 
             result = gateway.create_payment(
                 amount=amount,
@@ -117,35 +119,51 @@ class PaymentService:
             charged_wallet = False
             amount_decimal = Decimal(str(payment_log.amount))
 
-            print(f"[DEBUG] payment_log.invoice exists: {bool(payment_log.invoice)}")
+            print("=== [VERIFY DEBUG] START ===")
+            print(f"PaymentLog ID: {payment_log.id}")
+            print(f"Has Invoice: {bool(payment_log.invoice)}")
+
             if payment_log.invoice:
-                print(f"[DEBUG] invoice_type: {payment_log.invoice.invoice_type}")
-                print(f"[DEBUG] is_wallet_charge: {payment_log.invoice.is_wallet_charge}")
+                print(f"Invoice ID: {payment_log.invoice.id}")
+                print(f"Invoice Type (raw): {payment_log.invoice.invoice_type}")
+                print(f"Is Wallet Charge (property): {payment_log.invoice.is_wallet_charge}")
 
                 from apps.financial.services.invoice_service import InvoiceService
                 InvoiceService.record_payment(...)
 
                 if payment_log.invoice.is_wallet_charge:
-                    print("[DEBUG] Entering wallet charge block")
-                    from apps.accounts.services.wallet_service import WalletService
-                    if hasattr(payment_log.user, 'wallet'):
-                        WalletService.deposit(...)
-                        charged_wallet = True
-                        print("[DEBUG] Wallet deposit called successfully")
-
-            else:
-                # شارژ مستقیم والت (بدون invoice)
-                desc = (payment_log.description or '').lower()
-                if 'wallet' in desc or 'شارژ' in desc or 'charge' in desc:
+                    print("[DEBUG] → Entering wallet deposit block")
                     from apps.accounts.services.wallet_service import WalletService
                     if hasattr(payment_log.user, 'wallet'):
                         WalletService.deposit(
                             wallet=payment_log.user.wallet,
                             amount=amount_decimal,
-                            description="شارژ کیف پول از طریق درگاه (مستقیم)",
+                            description="شارژ کیف پول از طریق درگاه",
                             reference_id=str(payment_log.id)
                         )
                         charged_wallet = True
+                        print("[DEBUG] → Wallet deposit SUCCESS")
+                else:
+                    print("[DEBUG] → is_wallet_charge is FALSE")
+            else:
+                print("[DEBUG] → No invoice linked to payment_log")
+
+            print(f"Final charged_wallet: {charged_wallet}")
+            print("=== [VERIFY DEBUG] END ===")
+
+            # else:
+            #     # شارژ مستقیم والت (بدون invoice)
+            #     desc = (payment_log.description or '').lower()
+            #     if 'wallet' in desc or 'شارژ' in desc or 'charge' in desc:
+            #         from apps.accounts.services.wallet_service import WalletService
+            #         if hasattr(payment_log.user, 'wallet'):
+            #             WalletService.deposit(
+            #                 wallet=payment_log.user.wallet,
+            #                 amount=amount_decimal,
+            #                 description="شارژ کیف پول از طریق درگاه (مستقیم)",
+            #                 reference_id=str(payment_log.id)
+            #             )
+            #             charged_wallet = True
 
             logger.info(f"Payment verified successfully. Wallet charged: {charged_wallet}")
             return {

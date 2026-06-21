@@ -114,6 +114,9 @@ class PaymentViewSet(mixins.ListModelMixin,
     # ==================== Callback (بهبود یافته) ====================
     @action(detail=False, methods=['get', 'post'], url_path='callback/(?P<payment_log_id>[^/.]+)')
     def callback(self, request, payment_log_id=None):
+        print("🚨🚨🚨 [CALLBACK HIT] Function was called!")
+        print(f"PaymentLogID: {payment_log_id}")
+        print(f"Request GET data: {dict(request.GET)}")
         print(f"[Callback] START - PaymentLogID: {payment_log_id}")
 
         try:
