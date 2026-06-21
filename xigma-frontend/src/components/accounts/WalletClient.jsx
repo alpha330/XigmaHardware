@@ -251,7 +251,8 @@ export default function WalletClient() {
           user_id:userData.id,
           amount: amountNum,
           payment_method: 'online_gateway',
-          description: 'شارژ آنلاین کیف پول حساب کاربری'
+          description: 'شارژ آنلاین کیف پول حساب کاربری',
+          extra_data: { is_wallet_charge: true }
         })
       });
       const invoiceData = await invoiceRes.json();

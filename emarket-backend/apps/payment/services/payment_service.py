@@ -104,7 +104,7 @@ class PaymentService:
             payment_log = PaymentLog.objects.select_related('gateway', 'user', 'invoice').get(id=payment_log_id)
         except PaymentLog.DoesNotExist:
             return {'success': False, 'error': 'Payment log not found.'}
-
+        logger.info(f"Checking Wallet Charge Logic: InvoiceType={getattr(payment_log.invoice, 'invoice_type', 'None')}, Desc={payment_log.description}")
         if payment_log.status == PaymentStatus.VERIFIED:
             return {'success': True, 'payment_log': payment_log, 'already_verified': True}
 
@@ -114,34 +114,27 @@ class PaymentService:
         if result.get('success'):
             payment_log.mark_verified(result.get('reference_code'))
 
-            # === منطق شارژ والت (بهبود یافته) ===
             charged_wallet = False
-            amount_decimal = Decimal(str(payment_log.amount))  # همیشه Decimal
+            amount_decimal = Decimal(str(payment_log.amount))
 
+            print(f"[DEBUG] payment_log.invoice exists: {bool(payment_log.invoice)}")
             if payment_log.invoice:
-                from apps.financial.services.invoice_service import InvoiceService
-                InvoiceService.record_payment(
-                    invoice=payment_log.invoice,
-                    amount=float(amount_decimal),  # اگر سرویس invoice float می‌خواد
-                    payment_method='online_gateway',
-                    reference_code=str(result.get('reference_code', '')),
-                    verified_by=None,
-                )
+                print(f"[DEBUG] invoice_type: {payment_log.invoice.invoice_type}")
+                print(f"[DEBUG] is_wallet_charge: {payment_log.invoice.is_wallet_charge}")
 
-                inv_type = str(getattr(payment_log.invoice, 'invoice_type', '')).lower()
-                if 'wallet' in inv_type or 'charge' in inv_type:
+                from apps.financial.services.invoice_service import InvoiceService
+                InvoiceService.record_payment(...)
+
+                if payment_log.invoice.is_wallet_charge:
+                    print("[DEBUG] Entering wallet charge block")
                     from apps.accounts.services.wallet_service import WalletService
                     if hasattr(payment_log.user, 'wallet'):
-                        WalletService.deposit(
-                            wallet=payment_log.user.wallet,
-                            amount=amount_decimal,   # Decimal پاس بده
-                            description="شارژ کیف پول از طریق درگاه",
-                            reference_id=str(payment_log.id)
-                        )
+                        WalletService.deposit(...)
                         charged_wallet = True
+                        print("[DEBUG] Wallet deposit called successfully")
 
             else:
-                # اگر invoice وجود نداشت (شارژ مستقیم والت)
+                # شارژ مستقیم والت (بدون invoice)
                 desc = (payment_log.description or '').lower()
                 if 'wallet' in desc or 'شارژ' in desc or 'charge' in desc:
                     from apps.accounts.services.wallet_service import WalletService
@@ -161,8 +154,6 @@ class PaymentService:
                 'reference_code': result.get('reference_code'),
                 'wallet_charged': charged_wallet
             }
-
-        return {'success': False, 'error': 'Gateway verify failed'}
 
     @staticmethod
     def _get_client_ip(request):

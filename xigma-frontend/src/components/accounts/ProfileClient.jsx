@@ -263,7 +263,7 @@ const fileInputRef = useRef(null);
 const [loading, setLoading] = useState(true);
 const [savingBase, setSavingBase] = useState(false);
 const [savingRole, setSavingRole] = useState(false);
-
+const [timeLeft, setTimeLeft] = useState(0);
 const { isDarkMode } = useContext(ThemeModeContext);
 const [otpStep, setOtpStep] = useState(null); // 'mobile' | 'email' | null
 const [otpValue, setOtpValue] = useState('');
@@ -372,6 +372,7 @@ const submitRequestOtp = async () => {
     const data = await res.json();
     if (res.ok) {
       setPendingData({ ...pendingData, [otpStep]: newContactValue, otp_id: data.otp_id });
+      startTimer(60);
       showToast('کد تایید ارسال شد.', 'success');
       // اینجا مودال فعلی بسته نمی‌شود، چون باید کاربر کد را وارد کند
     } else {
@@ -615,6 +616,19 @@ const handleVerifyField = async () => {
   } finally {
     setVerifyLoading(false);
   }
+};
+
+const startTimer = (seconds = 60) => {
+  setTimeLeft(seconds);
+  const timer = setInterval(() => {
+    setTimeLeft((prev) => {
+      if (prev <= 1) {
+        clearInterval(timer);
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
 };
 
 return (
@@ -913,16 +927,35 @@ return (
           ) : (
             /* اگر کد ارسال شده، اینپوت ورود کد را نشان بده */
             <>
-              <Subtitle>کد تایید به {newContactValue} ارسال شد.</Subtitle>
+              <Subtitle style={{ marginBottom: '1rem' }}>
+                کد تایید به {newContactValue} ارسال شد.
+              </Subtitle>
+
               <Input
                 maxLength={6}
                 placeholder="کد ۶ رقمی"
                 value={otpValue}
                 onChange={(e) => setOtpValue(e.target.value)}
               />
-              <ActionButton onClick={handleVerifyField} style={{ marginTop: '1rem', width: '100%' }}>
+
+              <ActionButton onClick={handleVerifyField} disabled={verifyLoading} style={{ marginTop: '1rem', width: '100%' }}>
                 {verifyLoading ? 'در حال تایید...' : 'تایید نهایی'}
               </ActionButton>
+
+              <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                {timeLeft > 0 ? (
+                  <span style={{ fontSize: '0.85rem', color: 'var(--textMuted)' }}>
+                    ارسال مجدد کد تا {timeLeft} ثانیه دیگر
+                  </span>
+                ) : (
+                  <button
+                    onClick={submitRequestOtp}
+                    style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    ارسال مجدد کد
+                  </button>
+                )}
+              </div>
             </>
           )}
 
