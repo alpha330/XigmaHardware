@@ -4,11 +4,12 @@
 import React, { useContext, useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { ThemeModeContext } from '../../theme/ThemeRegistry';
 import SearchBar from './SearchBar';
 import { apiFetch } from '../../utils/apiFetch';
+import { useCart } from '@/context/CartContext';
 
 const HeaderWrapper = styled.header`
   position: sticky;
@@ -31,6 +32,25 @@ const HeaderWrapper = styled.header`
     gap: 1rem;
     padding: 1rem;
   }
+`;
+
+const CartWrapper = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.5rem;
+`;
+
+const CartBadge = styled.span`
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: ${({ theme }) => theme.colors.error};
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 50%;
 `;
 
 const Logo = styled(Link)`
@@ -168,6 +188,7 @@ const LogoutButton = styled.button`
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { isDarkMode, toggleTheme } = useContext(ThemeModeContext);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -175,55 +196,47 @@ export default function Header() {
   const [userData, setUserData] = useState(null);
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState(null);
+  const { cart, fetchCart } = useCart();
 
+  const handleClearCart = async () => {
+    await apiFetch('/api/v1/basket/carts/clear/', { method: 'POST' });
+    fetchCart(); // فراخوانی مجدد برای آپدیت هدر و Badge
+  };
+  const totalItems = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
-    const token = Cookies.get('token');
-    const fetchUser = async () => {
-      try {
-        // فرض بر این است که این اندپوینت در بک‌اند شما وجود دارد
-        const res = await apiFetch('/api/v1/accounts/users/me/');
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
+
+    const checkAuth = async () => {
+        const token = Cookies.get('token');
+        if (!token) {
+            setIsLoggedIn(false);
+            return;
         }
-      } catch (error) {
-        console.error("User not logged in");
-      }
+
+        // اگر توکن هست، اطلاعات را آپدیت کن
+        setIsLoggedIn(true);
+        try {
+            const [profileRes, userRes] = await Promise.all([
+                apiFetch('/api/v1/accounts/me/profile/'),
+                apiFetch('/api/v1/accounts/me/')
+            ]);
+
+            if (profileRes.ok) {
+                const data = await profileRes.json();
+                setUserProfile(data.profile);
+            }
+            if (userRes.ok) {
+                const data = await userRes.json();
+                setUserData(data.user);
+            }
+        } catch (error) {
+            console.error("Auth check failed", error);
+        }
     };
-    if (token) {
-      setIsLoggedIn(true);
-      apiFetch('/api/v1/accounts/me/profile/')
-      .then((res) => {
-        if (!res.ok) return null;
-        return res.json();
-      })
-      .then(data => {
-        if (data) setUserProfile(data.profile);
-      })
-      .catch((error) => {
-        // ارورهای 401 در خود apiFetch هندل شده و کوکی‌ها پاک میشن
-        console.error(' مشخصات پروفایل ارتباط با سرور:', error);
-      });
-      apiFetch('/api/v1/accounts/me/')
-      .then((res) => {
-        if (!res.ok) return null;
-        return res.json();
-      })
-      .then(data => {
-        if (data) setUserData(data.user);
-      })
-      .catch((error) => {
-        // ارورهای 401 در خود apiFetch هندل شده و کوکی‌ها پاک میشن
-        console.error('مشخصات کاربر ارتباط با سرور:', error);
-      });
-    }
-    fetchUser();
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+
+    checkAuth();
+  }, [pathname]);
+
   const stockAllowedRoles = ['super_admin', 'stock_keeper'];
   const handleLogout = async () => {
     try {
@@ -267,7 +280,29 @@ export default function Header() {
         <ThemeButton onClick={toggleTheme} title="تغییر تم">
           {mounted && (isDarkMode ? '☀️' : '🌙')}
         </ThemeButton>
-        <NavItem href="/basket/cart" style={{ fontSize: '1.2rem' }}>🛒</NavItem>
+        <CartWrapper>
+          <NavItem href="/basket/cart">🛒</NavItem>
+          {totalItems > 0 && <CartBadge>{totalItems}</CartBadge>}
+
+          <DropdownMenu>
+            {(!cart || cart.items?.length === 0) ? (
+              <div style={{ padding: '1rem', textAlign: 'center' }}>سبد خرید خالی است</div>
+            ) : (
+              <>
+                {cart.items.map((item) => (
+                  <DropdownItem key={item.id} href="/basket/cart">
+                    {item.product_name} x {item.quantity}
+                  </DropdownItem>
+                ))}
+                <MenuDivider />
+                <div style={{ padding: '0.5rem 1rem', fontWeight: 'bold' }}>
+                  مجموع: {cart.total_price?.toLocaleString()} تومان
+                </div>
+                <LogoutButton onClick={handleClearCart}>خالی کردن سبد</LogoutButton>
+              </>
+            )}
+          </DropdownMenu>
+        </CartWrapper>
 
         {mounted && (
           isLoggedIn ? (

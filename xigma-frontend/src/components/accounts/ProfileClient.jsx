@@ -68,6 +68,17 @@ const ProgressBarWrapper = styled.div`
   margin-bottom: 1rem;
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center; z-index: 2000;
+`;
+
+const ModalContent = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  padding: 2rem; border-radius: 16px; width: 90%; max-width: 400px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+`;
+
 const ProgressBarFill = styled.div`
   height: 100%;
   background-color: ${({ percentage, theme }) => percentage === 100 ? theme.colors.success : theme.colors.primary};
@@ -254,7 +265,10 @@ const [savingBase, setSavingBase] = useState(false);
 const [savingRole, setSavingRole] = useState(false);
 
 const { isDarkMode } = useContext(ThemeModeContext);
-
+const [otpStep, setOtpStep] = useState(null); // 'mobile' | 'email' | null
+const [otpValue, setOtpValue] = useState('');
+const [verifyLoading, setVerifyLoading] = useState(false);
+const [pendingData, setPendingData] = useState({ mobile: '', email: '' });
 // دیتای دریافتی از مدل User
 const [userData, setUserData] = useState({ first_name: '', last_name: '', email: '', mobile: '' });
 
@@ -283,6 +297,9 @@ const handleDateChange = (date) => {
   const gregorianDate = date.convert(gregorian, gregorian_en).format("YYYY-MM-DD");
   setGeneralProfile({ ...generalProfile, birth_date: gregorianDate });
 };
+
+const [isModalOpen, setIsModalOpen] = useState(false);
+const [newContactValue, setNewContactValue] = useState('');
 
 // ۱. دریافت اطلاعات اولیه پروفایل
 useEffect(() => {
@@ -343,6 +360,35 @@ useEffect(() => {
   fetchProfileData();
 }, [showToast]);
 
+
+const submitRequestOtp = async () => {
+  try {
+    setVerifyLoading(true);
+    const res = await apiFetch('/api/v1/accounts/auth/otp/change-contact/request/', {
+      method: 'POST',
+      body: JSON.stringify({ type: otpStep, value: newContactValue })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      setPendingData({ ...pendingData, [otpStep]: newContactValue, otp_id: data.otp_id });
+      showToast('کد تایید ارسال شد.', 'success');
+      // اینجا مودال فعلی بسته نمی‌شود، چون باید کاربر کد را وارد کند
+    } else {
+      throw new Error(data.error || 'خطا در ارسال کد');
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    setVerifyLoading(false);
+  }
+};
+
+const openOtpModal = (type) => {
+  setOtpStep(type); // 'mobile' یا 'email'
+  setIsModalOpen(true);
+};
+
 // ۲. بروزرسانی فیلدهای عمومی و مشترک (ProfileUpdateSerializer)
 const handleSaveGeneralInfo = async (e) => {
   e.preventDefault();
@@ -377,6 +423,37 @@ const handleSaveGeneralInfo = async (e) => {
     showToast(error.message, 'error');
   } finally {
     setSavingBase(false);
+  }
+};
+
+// ۱. این تابع را اضافه کنید
+const handleRequestOtp = async (type) => {
+  // از کاربر مقدار جدید را می‌پرسیم (می‌توانید اینجا یک input موقت باز کنید یا از یک Prompt ساده استفاده کنید)
+  const newValue = prompt(`لطفاً ${type === 'mobile' ? 'شماره موبایل' : 'ایمیل'} جدید خود را وارد کنید:`);
+
+  if (!newValue) return;
+
+  try {
+    setVerifyLoading(true);
+    const res = await apiFetch('/api/v1/accounts/auth/otp/change-contact/request/', {
+      method: 'POST',
+      body: JSON.stringify({ type: type, value: newValue })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setOtpStep(type);
+      // 🎯 نکته مهم: اینجا otp_id را ذخیره کنید
+      setPendingData({ ...pendingData, [type]: newValue, otp_id: data.otp_id });
+      showToast('کد تایید ارسال شد.', 'success');
+    } else {
+      throw new Error(data.error || 'خطا در ارسال کد');
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    setVerifyLoading(false);
   }
 };
 
@@ -508,6 +585,35 @@ const handleChangePassword = async (e) => {
     showToast(error.message, 'error');
   } finally {
     setPassLoading(false);
+  }
+};
+
+const handleVerifyField = async () => {
+  setVerifyLoading(true);
+  try {
+    const res = await apiFetch('/api/v1/accounts/auth/otp/change-contact/verify/', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: otpStep,
+        code: otpValue,
+        value: pendingData[otpStep],
+        // 🎯 ارسال otp_id از استیت
+        otp_id: pendingData.otp_id
+      })
+    });
+
+    if (res.ok) {
+      showToast('اطلاعات با موفقیت بروزرسانی شد.', 'success');
+      setOtpStep(null);
+      window.location.reload();
+    } else {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'کد تایید اشتباه است.');
+    }
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    setVerifyLoading(false);
   }
 };
 
@@ -690,62 +796,142 @@ return (
       </form>
     </ProfileCard>
     <ProfileCard>
-        <Title style={{ marginBottom: '1.5rem', color: 'var(--error)' }}>امنیت و کلمه عبور</Title>
-        <Subtitle style={{ marginBottom: '2rem' }}>
-          برای حفظ امنیت حساب کاربری خود، پیشنهاد می‌شود رمز عبورتان را به‌صورت دوره‌ای تغییر دهید.
-        </Subtitle>
+            <Title style={{ marginBottom: '1.5rem', color: 'var(--error)' }}>امنیت و کلمه عبور</Title>
+            <Subtitle style={{ marginBottom: '2rem' }}>
+              برای حفظ امنیت حساب کاربری خود، پیشنهاد می‌شود رمز عبورتان را به‌صورت دوره‌ای تغییر دهید.
+            </Subtitle>
 
-        <form onSubmit={handleChangePassword}>
-          <FormGrid>
-            <InputGroup fullWidth>
-              <Label>رمز عبور فعلی</Label>
+            <form onSubmit={handleChangePassword}>
+              <FormGrid>
+                <InputGroup fullWidth>
+                  <Label>رمز عبور فعلی</Label>
+                  <Input
+                    type="password"
+                    dir="ltr"
+                    placeholder="••••••••"
+                    value={passwordData.old_password}
+                    onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
+                    required
+                  />
+                </InputGroup>
+
+                <InputGroup>
+                  <Label>رمز عبور جدید</Label>
+                  <Input
+                    type="password"
+                    dir="ltr"
+                    placeholder="••••••••"
+                    value={passwordData.new_password}
+                    onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                    required
+                  />
+                </InputGroup>
+
+                <InputGroup>
+                  <Label>تکرار رمز عبور جدید</Label>
+                  <Input
+                    type="password"
+                    dir="ltr"
+                    placeholder="••••••••"
+                    value={passwordData.new_password_confirm}
+                    onChange={(e) => setPasswordData({ ...passwordData, new_password_confirm: e.target.value })}
+                    required
+                  />
+                </InputGroup>
+
+                <div style={{ marginTop: '1rem', gridColumn: '1 / -1' }}>
+                  <ActionButton
+                    variant="primary"
+                    type="submit"
+                    // style={{ backgroundColor: 'var(--error)', borderColor: 'var(--error)', color: '#fff' }}
+                    disabled={passLoading}
+                  >
+                    {passLoading ? 'در حال پردازش...' : 'تغییر رمز عبور'}
+                  </ActionButton>
+                </div>
+              </FormGrid>
+            </form>
+          </ProfileCard>
+          <ProfileCard>
+      <Title style={{ color: 'var(--primary)' }}>اطلاعات تماس و تایید هویت</Title>
+      <FormGrid>
+        {/* ایمیل */}
+        <InputGroup>
+          <Label>ایمیل</Label>
+          <div style={{ display: 'flex', gap: '5px' }}>
+            <Input value={userData.email} disabled={true} />
+            {/* 🎯 اینجا تابع جدید را صدا بزنید */}
+            <ActionButton onClick={() => openOtpModal('email')}>ویرایش</ActionButton>
+          </div>
+        </InputGroup>
+
+        {/* موبایل */}
+        <InputGroup>
+          <Label>شماره موبایل</Label>
+          <div style={{ display: 'flex', gap: '5px' }}>
+            <Input value={userData.mobile} disabled={true} />
+            {/* 🎯 اینجا تابع جدید را صدا بزنید */}
+            <ActionButton onClick={() => openOtpModal('mobile')}>ویرایش</ActionButton>
+          </div>
+        </InputGroup>
+      </FormGrid>
+
+      {/* مودال یا بخش کوچک برای ورود کد OTP */}
+      {otpStep && (
+        <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid var(--primary)', borderRadius: '8px' }}>
+          <Subtitle>کد تایید ۶ رقمی به {otpStep === 'mobile' ? 'موبایل' : 'ایمیل'} شما ارسال شد:</Subtitle>
+          <Input
+            maxLength={6}
+            placeholder="کد تایید"
+            value={otpValue}
+            onChange={(e) => setOtpValue(e.target.value)}
+          />
+          <ActionButton onClick={handleVerifyField} disabled={verifyLoading}>
+            {verifyLoading ? 'در حال تایید...' : 'تایید و ذخیره'}
+          </ActionButton>
+          <ActionButton onClick={() => setOtpStep(null)}>انصراف</ActionButton>
+        </div>
+      )}
+    </ProfileCard>
+    {isModalOpen && (
+      <ModalOverlay>
+        <ModalContent>
+          <Title>تایید {otpStep === 'mobile' ? 'موبایل' : 'ایمیل'} جدید</Title>
+
+          {/* اگر هنوز کد ارسال نشده، اینپوت دریافت مقدار جدید را نشان بده */}
+          {!pendingData.otp_id ? (
+            <>
               <Input
-                type="password"
-                dir="ltr"
-                placeholder="••••••••"
-                value={passwordData.old_password}
-                onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
-                required
+                placeholder={otpStep === 'mobile' ? 'شماره موبایل جدید' : 'ایمیل جدید'}
+                value={newContactValue}
+                onChange={(e) => setNewContactValue(e.target.value)}
               />
-            </InputGroup>
-
-            <InputGroup>
-              <Label>رمز عبور جدید</Label>
-              <Input
-                type="password"
-                dir="ltr"
-                placeholder="••••••••"
-                value={passwordData.new_password}
-                onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                required
-              />
-            </InputGroup>
-
-            <InputGroup>
-              <Label>تکرار رمز عبور جدید</Label>
-              <Input
-                type="password"
-                dir="ltr"
-                placeholder="••••••••"
-                value={passwordData.new_password_confirm}
-                onChange={(e) => setPasswordData({ ...passwordData, new_password_confirm: e.target.value })}
-                required
-              />
-            </InputGroup>
-
-            <div style={{ marginTop: '1rem', gridColumn: '1 / -1' }}>
-              <ActionButton
-                variant="primary"
-                type="submit"
-                // style={{ backgroundColor: 'var(--error)', borderColor: 'var(--error)', color: '#fff' }}
-                disabled={passLoading}
-              >
-                {passLoading ? 'در حال پردازش...' : 'تغییر رمز عبور'}
+              <ActionButton onClick={submitRequestOtp} style={{ marginTop: '1rem', width: '100%' }}>
+                {verifyLoading ? 'در حال ارسال...' : 'ارسال کد تایید'}
               </ActionButton>
-            </div>
-          </FormGrid>
-        </form>
-      </ProfileCard>
+            </>
+          ) : (
+            /* اگر کد ارسال شده، اینپوت ورود کد را نشان بده */
+            <>
+              <Subtitle>کد تایید به {newContactValue} ارسال شد.</Subtitle>
+              <Input
+                maxLength={6}
+                placeholder="کد ۶ رقمی"
+                value={otpValue}
+                onChange={(e) => setOtpValue(e.target.value)}
+              />
+              <ActionButton onClick={handleVerifyField} style={{ marginTop: '1rem', width: '100%' }}>
+                {verifyLoading ? 'در حال تایید...' : 'تایید نهایی'}
+              </ActionButton>
+            </>
+          )}
+
+          <button onClick={() => { setIsModalOpen(false); setPendingData({}); }} style={{ marginTop: '1rem', background: 'none', border: 'none', width: '100%', cursor: 'pointer' }}>
+            بستن
+          </button>
+        </ModalContent>
+      </ModalOverlay>
+    )}
   </PageWrapper>
 );
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
+import CircularTimer from './CircularTimer';
 
 const InputContainer = styled.div`
   display: flex;
@@ -39,6 +40,15 @@ export default function OTPInput({ length = 6, onComplete, resendOTP }) {
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
+
+  useEffect(() => {
+    if (timer > 0) {
+      const interval = setInterval(() => {
+        setTimer((prev) => prev - 1); // 🎯 استفاده از Functional Update برای جلوگیری از باگ وابستگی
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [timer]);
 
   const handleChange = (e, index) => {
     const value = e.target.value;
@@ -95,11 +105,25 @@ export default function OTPInput({ length = 6, onComplete, resendOTP }) {
           />
         ))}
       </InputContainer>
-      <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '1.5rem' }}>
         {timer > 0 ? (
-          <p>ارسال مجدد تا {Math.floor(timer / 60)}:{timer % 60 < 10 ? '0' : ''}{timer % 60}</p>
+          <CircularTimer timeLeft={timer} />
         ) : (
-          <button onClick={() => { setTimer(120); resendOTP(); }} style={{ color: 'var(--primary)', border: 'none', background: 'none', cursor: 'pointer' }}>
+          <button
+            onClick={() => { setTimer(120); resendOTP(); }}
+            style={{
+              padding: '10px 20px',
+              borderRadius: '8px',
+              border: '1px solid var(--primary)',
+              background: 'transparent',
+              color: 'var(--primary)',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              transition: '0.3s'
+            }}
+            onMouseOver={(e) => e.target.style.background = 'var(--primary-light)'}
+            onMouseOut={(e) => e.target.style.background = 'transparent'}
+          >
             ارسال مجدد کد
           </button>
         )}

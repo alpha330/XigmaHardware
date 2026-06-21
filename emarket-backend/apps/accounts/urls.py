@@ -21,6 +21,8 @@ from .views.auth import (
     PasswordResetRequestView,
     PasswordResetConfirmView,
     ChangePasswordView,
+    RequestChangeOTPView,
+    VerifyChangeOTPView
 )
 from .views.user import UserViewSet
 from .views.profile import ProfileViewSet
@@ -38,7 +40,15 @@ app_name = 'accounts'
 
 urlpatterns = [
     # ==================== AUTH ====================
-    
+
+    path('auth/otp/change-contact/request/',
+         RequestChangeOTPView.as_view(),
+         name='request-change-otp'),
+
+    path('auth/otp/change-contact/verify/',
+         VerifyChangeOTPView.as_view(),
+         name='verify-change-otp'),
+
     # Registration
     path('auth/register/email/',
          EmailRegisterView.as_view(),
@@ -46,7 +56,7 @@ urlpatterns = [
     path('auth/register/mobile/',
          MobileRegisterView.as_view(),
          name='mobile-register'),
-    
+
     # Login/Logout
     path('auth/login/',
          LoginView.as_view(),
@@ -54,7 +64,7 @@ urlpatterns = [
     path('auth/logout/',
          LogoutView.as_view(),
          name='logout'),
-    
+
     # JWT Tokens
     path('auth/token/refresh/',
          TokenRefreshView.as_view(),
@@ -65,7 +75,7 @@ urlpatterns = [
     path('auth/token/blacklist/',
          TokenBlacklistView.as_view(),
          name='token-blacklist'),
-    
+
     # Email Verification
     path('auth/verify/email/<str:token>/',
          EmailVerificationView.as_view(),
@@ -73,7 +83,7 @@ urlpatterns = [
     path('auth/verify/email/resend/',
          EmailVerificationView.as_view(),
          name='resend-email-verification'),
-    
+
     # Mobile/OTP Verification
     path('auth/otp/request/',
          RequestOTPView.as_view(),
@@ -84,7 +94,7 @@ urlpatterns = [
     path('auth/verify/mobile/',
          MobileVerificationView.as_view(),
          name='verify-mobile'),
-    
+
     # Password Management
     path('auth/password/change/',
          ChangePasswordView.as_view(),
@@ -95,9 +105,9 @@ urlpatterns = [
     path('auth/password/reset/confirm/',
          PasswordResetConfirmView.as_view(),
          name='password-reset-confirm'),
-    
+
     # ==================== USER ====================
-    
+
     # Current User
     path('me/',
          UserViewSet.as_view({
@@ -109,9 +119,9 @@ urlpatterns = [
     path('me/delete-account/',
          UserViewSet.as_view({'delete': 'delete_account'}),
          name='delete-account'),
-    
+
     # ==================== PROFILE ====================
-    
+
     # My Profile
     path('me/profile/',
          ProfileViewSet.as_view({
@@ -129,9 +139,9 @@ urlpatterns = [
     path('me/profile/check-completion/',
          ProfileViewSet.as_view({'get': 'check_completion'}),
          name='check-profile-completion'),
-    
+
     # ==================== WALLET ====================
-    
+
     # My Wallet
     path('me/wallet/',
          WalletViewSet.as_view({'get': 'my_wallet'}),
@@ -145,9 +155,9 @@ urlpatterns = [
     path('me/wallet/withdraw/',
          WalletViewSet.as_view({'post': 'withdraw'}),
          name='wallet-withdraw'),
-    
+
     # ==================== DEVICES ====================
-    
+
     # My Devices
     path('me/devices/',
          DeviceViewSet.as_view({'get': 'my_devices'}),
@@ -161,9 +171,9 @@ urlpatterns = [
     path('me/devices/<uuid:pk>/revoke/',
          DeviceViewSet.as_view({'post': 'revoke_device'}),
          name='revoke-device'),
-    
+
     # ==================== ADMIN ====================
-    
+
     # Admin User Management
     path('admin/users/',
          UserViewSet.as_view({'get': 'list'}),
@@ -181,7 +191,7 @@ urlpatterns = [
     path('admin/users/<uuid:pk>/toggle-active/',
          UserViewSet.as_view({'post': 'toggle_active'}),
          name='admin-toggle-active'),
-    
+
     # Admin Profile Management
     path('admin/profiles/',
          ProfileViewSet.as_view({'get': 'list'}),
@@ -189,7 +199,7 @@ urlpatterns = [
     path('admin/profiles/<uuid:pk>/',
          ProfileViewSet.as_view({'get': 'retrieve'}),
          name='admin-profile-detail'),
-    
+
     # Admin Wallet Management
     path('admin/wallets/',
          WalletViewSet.as_view({'get': 'list'}),
@@ -197,12 +207,12 @@ urlpatterns = [
     path('admin/wallets/<uuid:pk>/',
          WalletViewSet.as_view({'get': 'retrieve'}),
          name='admin-wallet-detail'),
-    
+
     # Admin Device Management
     path('admin/devices/',
          DeviceViewSet.as_view({'get': 'list'}),
          name='admin-devices-list'),
-    
+
     # ==================== ROUTER ====================
     path('', include(router.urls)),
 ]

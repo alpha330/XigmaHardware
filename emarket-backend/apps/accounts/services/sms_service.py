@@ -32,13 +32,20 @@ class GhasedakSMSService:
         return f"{message}{self.OPT_OUT_MESSAGE}"
 
     def _handle_response(self, response, action_name, mobile):
-        """مدیریت متمرکز پاسخ‌های سرویس"""
-        if response.get('result', {}).get('code') == 200:
+        """مدیریت متمرکز پاسخ‌ها - فقط بر اساس استاتوس‌کد"""
+        # قاصدک برای موفقیت، statusCode 200 را برمی‌گرداند
+        # و معمولاً در دیکشنریِ پاسخ فیلدی به نام isSuccess: True دارد
+        status_code = response.get('statusCode', 0)
+        is_success = response.get('isSuccess', False)
+
+        if is_success or status_code == 200:
             logger.info(f"{action_name} successful for {mobile}")
             return {'success': True, 'data': response}
 
-        logger.error(f"{action_name} failed for {mobile}: {response}")
-        return {'success': False, 'error': response.get('message', 'Unknown Error')}
+        # فقط اگر کد 200 نبود، به عنوان خطا در نظر بگیر
+        error_msg = response.get('message', 'Unknown Error')
+        logger.error(f"{action_name} failed for {mobile}: {error_msg}")
+        return {'success': False, 'error': error_msg}
 
     @shared_task(bind=True, max_retries=3)
     def send_otp_sms(self, mobile, code):

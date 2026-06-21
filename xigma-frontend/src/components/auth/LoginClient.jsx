@@ -30,8 +30,8 @@ export default function LoginClient() {
     setLoading(true);
 
     const payload = activeTab === 'password'
-      ? { email: formData.email_or_mobile, password: formData.password }
-      : { mobile: formData.email_or_mobile }; // درخواست OTP
+      ? { identifier: formData.email_or_mobile, password: formData.password }
+      : { identifier: formData.email_or_mobile }; // درخواست OTP
 
     try {
       const res = await apiFetch('/api/v1/accounts/auth/login/', {
@@ -41,11 +41,15 @@ export default function LoginClient() {
       });
 
       const data = await res.json();
-      console.log(data)
+      console.log("LOGIN :",data)
       if (!res.ok) throw new Error(data.error || 'اطلاعات صحیح نیست.');
 
       if (activeTab === 'otp') {
-        setOtpData({ ...otpData, otp_id: data.otp_id });
+        if (!data.otp_id) {
+          showToast('کد تایید از سمت سرور ارسال نشد.', 'error');
+          return;
+        }
+        setOtpData({ otp_id: data.otp_id }); // فقط همین را ست کن
         setStep(2);
         showToast('کد تایید ارسال شد.', 'success');
       } else {
@@ -61,19 +65,26 @@ export default function LoginClient() {
   const handleVerifyOtp = async (code) => {
     setLoading(true);
     try {
+      // تشخیص اینکه کاربر در مرحله اول موبایل وارد کرده یا ایمیل
+      const isEmail = formData.email_or_mobile.includes('@');
+
+      const payload = {
+        otp_id: otpData.otp_id,
+        code: code,
+        // ارسال بر اساس نوعِ شناسه
+        [isEmail ? 'email' : 'mobile']: formData.email_or_mobile
+      };
+
       const res = await apiFetch('/api/v1/accounts/auth/otp/verify/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            otp_id: otpData.otp_id,
-            mobile: formData.email_or_mobile,
-            code: code,
-        })
+        body: JSON.stringify(payload)
       });
-      console.log(otpData)
-      const data = await res.json();
 
+      const data = await res.json();
+      console.log("VERIFY :",data)
       if (!res.ok) throw new Error(data.error || 'کد نامعتبر است.');
+
       saveTokens(data.tokens);
     } catch (error) {
       showToast(error.message, 'error');

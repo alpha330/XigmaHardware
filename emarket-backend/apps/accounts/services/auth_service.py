@@ -1,10 +1,13 @@
 import logging
+from celery import shared_task
 from django.contrib.auth import authenticate, get_user_model
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from apps.accounts.services.sms_service import sms_service
-from apps.accounts.tasks import send_otp_sms
+from apps.accounts.tasks import send_otp_sms,send_otp_email
+from apps.accounts.models import OTPCode
+from django.db.models import Q
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -23,7 +26,7 @@ class AuthService:
         if not user:
             raise ValueError(_('User not found.'))
 
-        from apps.accounts.models import OTPCode
+
         # تنظیم validity_minutes روی 2 برای انقضای دو دقیقه‌ای
         if '@' in identifier:
             otp = OTPCode.generate(user=user, purpose=purpose, sent_via='email', validity_minutes=2)
@@ -33,6 +36,24 @@ class AuthService:
             otp = OTPCode.generate(user=user, purpose=purpose, sent_via='sms', validity_minutes=2)
             from apps.accounts.tasks import send_otp_sms
             send_otp_sms.delay(user.mobile, otp.code)
+
+        return otp.id
+
+    @classmethod
+    def send_login_otp(cls, identifier):
+        user = User.objects.filter(Q(mobile=identifier) | Q(email=identifier)).first()
+        if not user: return None
+
+        # تشخیص اینکه ارسال از چه طریقی باشد
+        is_email = '@' in identifier
+        sent_via = 'email' if is_email else 'sms'
+
+        otp = OTPCode.generate(user=user, purpose='login', sent_via=sent_via)
+
+        if is_email:
+            send_otp_email.delay(identifier, otp.code)
+        else:
+            send_otp_sms.delay(identifier, otp.code)
 
         return otp.id
 
@@ -88,19 +109,30 @@ class AuthService:
 
         return user
 
-    @classmethod
-    def send_login_otp(cls, mobile):
-        """ارسال OTP برای ورود"""
-        from apps.accounts.models import User, OTPCode
+    @shared_task(bind=True, max_retries=3)
+    def send_otp_sms(self, mobile, code):
+        from apps.accounts.services.sms_service import sms_service
 
-        user = User.objects.filter(mobile=mobile).first()
-        if not user:
-            return False  # کاربر وجود ندارد
+        result = sms_service.send_single(mobile, f"کد تایید شما در زیگما هاردور: {code}")
 
-        otp = OTPCode.generate(user=user, purpose='login', sent_via='sms')
-        send_otp_sms.delay(mobile, otp.code)
+        # 🎯 شرط شفاف: اگر نتیجه موفقیت‌آمیز است، تمام کن
+        if result.get('success') is True:
+            return True
+        else:
+            # 🎯 فقط اگر موفق نبود، لاگ کن و ری‌ترای کن
+            error_msg = result.get('error', 'Unknown Error')
+            logger.error(f"SMS retry triggered for {mobile}. Error: {error_msg}")
+            raise self.retry(exc=Exception(error_msg), countdown=30)
 
+    @staticmethod
+    def send_otp_email(email, code):
+        """
+        ارسال کد OTP به ایمیل کاربر با استفاده از تسک‌های غیرهمزمان (Celery)
+        """
+        # ارسال به صف Celery برای جلوگیری از کند شدن سایت
+        send_otp_email.delay(email, code)
         return True
+
 
     @classmethod
     def send_reset_password_otp(cls, mobile):

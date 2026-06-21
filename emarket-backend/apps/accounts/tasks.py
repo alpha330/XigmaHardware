@@ -1005,35 +1005,36 @@ def backup_user_data(user_id):
         logger.error(f"Failed to backup user {user_id}: {str(e)}")
         return f"Error: {str(e)}"
 
-@shared_task(
-    name='accounts.send_otp_sms',
-    bind=True,
-    max_retries=2,
-    default_retry_delay=30,
-)
-def send_otp_sms(self, mobile, code, template_name=None):
-    """
-    ارسال کد OTP از طریق SMS (قاصدک)
+@shared_task(bind=True, max_retries=3)
+def send_otp_sms(self, mobile, code):
+    from apps.accounts.services.sms_service import sms_service
 
-    Args:
-        mobile: شماره موبایل
-        code: کد OTP
-        template_name: (اختیاری - اگر خالی باشد مستقیم ارسال می‌شود)
-    """
-    logger.info(f"Sending OTP to {mobile}: {code}")
+    result = sms_service.send_single(mobile, f"کد تایید شما در زیگما هاردور: {code}")
 
-    if template_name:
-        # با قالب
-        result = sms_service.send_otp(mobile, code, template_name)
-    else:
-        # مستقیم بدون قالب
-        result = sms_service.send_otp_direct(mobile, code)
+    # اگر موفق بود، مستقیماً برگرد و هیچ ری‌ترایی انجام نده
+    if result.get('success') is True:
+        return True
 
-    if not result.get('success'):
-        logger.error(f"OTP SMS failed: {result.get('error')}")
-        raise self.retry(exc=Exception(result.get('error')))
+    # اگر موفق نبود، فقط در این صورت ری‌ترای کن
+    error_msg = result.get('error', 'Unknown Error')
 
-    return f"OTP sent to {mobile}"
+    # بررسی اینکه آیا خطای "با موفقیت انجام شد" است؟ (که نباید باشد!)
+    if "موفقیت" in error_msg:
+        return True # اگر پیام موفقیت را به اشتباه خطا گرفت، آن را به عنوان موفقیت قبول کن
+
+    raise self.retry(exc=Exception(error_msg), countdown=30)
+
+@shared_task
+def send_otp_email(email, code):
+    subject = _('Your Login Code')
+    html_message = render_to_string('accounts/emails/otp.html', {'code': code})
+    send_mail(
+        subject=subject,
+        message=f'Your code: {code}',
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[email],
+        html_message=html_message
+    )
 
 
 @shared_task(

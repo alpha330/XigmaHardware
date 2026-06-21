@@ -124,49 +124,50 @@ class LoginView(generics.GenericAPIView):
         password = serializer.validated_data.get('password')
         otp_code = serializer.validated_data.get('otp_code')
 
+        # شناسه اصلی برای کار با سرویس (ایمیل یا موبایل)
+        identifier = email or mobile
+
         # -------------------------------
-        # ۱) درخواست OTP (فقط موبایل، بدون رمز و OTP)
+        # ۱) درخواست OTP (فقط شناسه، بدون رمز و OTP)
         # -------------------------------
-        if mobile and not password and not otp_code:
-            success = AuthService.send_login_otp(mobile)
-            if success:
+        if identifier and not password and not otp_code:
+            # ارسال identifier به جای mobile به سرویس
+            otp_id = AuthService.send_login_otp(identifier)
+
+            if otp_id:
                 return Response({
-                    'message': _('OTP sent to your mobile.'),
-                    'expires_in': 300
+                    'message': _('OTP sent to your email/mobile.'),
+                    'otp_id': str(otp_id),
+                    'expires_in': 120
                 })
             else:
                 return Response({
-                    'error': _('Mobile number not registered.')
+                    'error': _('Identifier not registered.')
                 }, status=status.HTTP_404_NOT_FOUND)
 
         # -------------------------------
         # ۲) ورود با OTP
         # -------------------------------
-        if mobile and otp_code:
-            user = AuthService.authenticate_user(mobile=mobile, otp_code=otp_code)
+        if identifier and otp_code:
+            # سرویس باید متد authenticate_user را طوری داشته باشد که با identifier کار کند
+            user = AuthService.authenticate_user(identifier=identifier, otp_code=otp_code)
             if not user:
-                return Response({
-                    'error': _('Invalid or expired OTP.')
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'error': _('Invalid or expired OTP.')}, status=status.HTTP_401_UNAUTHORIZED)
 
         # -------------------------------
-        # ۳) ورود با رمز عبور (ایمیل یا موبایل)
+        # ۳) ورود با رمز عبور
         # -------------------------------
-        elif password:
+        elif password and identifier:
             user = AuthService.authenticate_user(
                 email=email,
                 mobile=mobile,
                 password=password
             )
             if not user:
-                return Response({
-                    'error': _('Invalid credentials.')
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'error': _('Invalid credentials.')}, status=status.HTTP_401_UNAUTHORIZED)
 
         else:
-            return Response({
-                'error': _('Provide password or OTP.')
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': _('Provide password or OTP.')}, status=status.HTTP_400_BAD_REQUEST)
 
         # -------------------------------
         # ۴) بررسی وضعیت کاربر
@@ -275,29 +276,41 @@ class VerifyOTPView(views.APIView):
 
         try:
             from apps.accounts.models import OTPCode
+            from django.db.models import Q
 
-            # 🎯 اصلاح: استفاده از .get برای جلوگیری از KeyError
             otp_id = serializer.validated_data.get('otp_id')
-            mobile = serializer.validated_data.get('mobile')
             code = serializer.validated_data.get('code')
+            # دریافت identifier (ایمیل یا موبایل) از سریالایزر
+            mobile = serializer.validated_data.get('mobile')
+            email = serializer.validated_data.get('email')
+            identifier = mobile or email
 
             if not otp_id:
                 return Response({'error': _('OTP ID is missing.')}, status=status.HTTP_400_BAD_REQUEST)
 
-            otp = OTPCode.objects.get(id=otp_id, user__mobile=mobile)
+            # 🎯 اصلاح: فیلتر کردن کاربر بر اساس موبایل OR ایمیل
+            otp = OTPCode.objects.get(
+                id=otp_id,
+                user__in=User.objects.filter(Q(mobile=identifier) | Q(email=identifier))
+            )
 
             if otp.verify(code):
-                otp.user.verify_mobile()
-                refresh = RefreshToken.for_user(otp.user)
-                AuthService.update_login_info(otp.user, request)
+                user = otp.user
+                # مشخص کردن اینکه کاربر موبایلی بوده یا ایمیلی برای متد verify
+                if mobile:
+                    user.verify_mobile()
+                else:
+                    user.verify_email() # اگر متد verify_email دارید
 
-                # ارسال خوش‌آمدگویی (اگر اولین ورود است)
-                if otp.user.last_login is None:
-                    AuthService.send_welcome_message(otp.user)
+                refresh = RefreshToken.for_user(user)
+                AuthService.update_login_info(user, request)
+
+                if user.last_login is None:
+                    AuthService.send_welcome_message(user)
 
                 return Response({
                     'message': _('OTP verified successfully.'),
-                    'user': UserSerializer(otp.user, context={'request': request}).data,
+                    'user': UserSerializer(user, context={'request': request}).data,
                     'tokens': {
                         'refresh': str(refresh),
                         'access': str(refresh.access_token),
@@ -583,3 +596,60 @@ class PasswordResetConfirmView(views.APIView):
             return Response({
                 'error': _('Failed to reset password.')
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class RequestChangeOTPView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        new_value = request.data.get('value')  # موبایل یا ایمیل جدید
+        contact_type = request.data.get('type') # 'mobile' یا 'email'
+
+        if not new_value or contact_type not in ['mobile', 'email']:
+            return Response({'error': _('Invalid data.')}, status=status.HTTP_400_BAD_REQUEST)
+        from apps.accounts.models import OTPCode
+        # تولید کد OTP با هدف CHANGE_CONTACT
+        otp = OTPCode.generate(
+            user=request.user,
+            purpose='change_contact',
+            sent_via=contact_type
+        )
+
+        # ارسال کد (استفاده از سرویس‌های موجود شما)
+        if contact_type == 'mobile':
+            AuthService.send_otp_sms(new_value, otp.code)
+        else:
+            AuthService.send_otp_email(new_value, otp.code)
+
+        return Response({'otp_id': str(otp.id)})
+
+class VerifyChangeOTPView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        otp_id = request.data.get('otp_id')
+        code = request.data.get('code')
+        new_value = request.data.get('value')
+        contact_type = request.data.get('type')
+
+        try:
+            from apps.accounts.models import OTPCode
+            # جستجوی کد مربوطه برای این کاربر با هدف تغییر اطلاعات
+            otp = OTPCode.objects.get(id=otp_id, user=request.user, purpose='change_contact')
+
+            # استفاده از متد verify موجود در مدل شما
+            if otp.verify(code):
+                # بروزرسانی دیتابیس کاربر
+                if contact_type == 'mobile':
+                    request.user.mobile = new_value
+                else:
+                    request.user.email = new_value
+                request.user.save()
+
+                return Response({'message': _('Contact info updated successfully.')})
+            else:
+                # ارور در صورت اشتباه بودن کد یا تمام شدن تلاش‌ها
+                return Response({'error': _('Invalid or expired code.')}, status=status.HTTP_400_BAD_REQUEST)
+
+        except OTPCode.DoesNotExist:
+            return Response({'error': _('Invalid OTP reference.')}, status=status.HTTP_400_BAD_REQUEST)

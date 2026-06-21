@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from apps.accounts.enums import UserRole
 from apps.accounts.validators import validate_iranian_phone
+from django.core.validators import validate_email
 
 User = get_user_model()
 
@@ -132,85 +133,55 @@ class MobileRegisterSerializer(serializers.Serializer):
 
 class LoginSerializer(serializers.Serializer):
     """
-    سریالایزر ورود (با ایمیل یا موبایل)
+    سریالایزر ورود برای پذیرش ایمیل یا موبایل
     """
-    email = serializers.EmailField(
-        required=False,
-        error_messages={
-            'invalid': _('Please enter a valid email address.'),
-        }
-    )
-    mobile = serializers.CharField(
-        required=False,
-        max_length=11,
-        error_messages={
-            'invalid': _('Please enter a valid mobile number.'),
-        }
-    )
-    password = serializers.CharField(
-        required=False,
-        write_only=True,
-        style={'input_type': 'password'},
-    )
-    otp_code = serializers.CharField(
-        required=False,
-        max_length=6,
-        min_length=6,
-    )
+    identifier = serializers.CharField(required=True)
+    password = serializers.CharField(required=False, allow_blank=True)
+    otp_code = serializers.CharField(required=False, max_length=6, min_length=6)
 
-    def validate(self, data):
-        email = data.get('email')
-        mobile = data.get('mobile')
+    def validate(self, attrs):
+        identifier = attrs.get('identifier')
 
-        if not email and not mobile:
-            raise serializers.ValidationError({
-                'email': _('Email or mobile is required.'),
-                'mobile': _('Email or mobile is required.'),
-            })
+        # ۱. تشخیص اینکه ورودی ایمیل است یا موبایل
+        is_email = False
+        try:
+            validate_email(identifier)
+            is_email = True
+        except:
+            # اگر ایمیل نبود، سعی کن به عنوان موبایل اعتبارسنجی کنی
+            try:
+                validate_iranian_phone(identifier)
+            except:
+                raise serializers.ValidationError({'identifier': 'فرمت ایمیل یا موبایل معتبر نیست.'})
 
-        return data
+        # ۲. مقداردهی به فیلدهای دیتابیس
+        if is_email:
+            attrs['email'] = identifier
+            attrs['mobile'] = None
+        else:
+            attrs['email'] = None
+            attrs['mobile'] = identifier
+
+        return attrs
 
 
 class OTPSerializer(serializers.Serializer):
-    """
-    سریالایزر تایید OTP
-    """
-    mobile = serializers.CharField(
-        required=True,
-        max_length=11,
-        validators=[validate_iranian_phone],
-    )
-    code = serializers.CharField(
-        required=True,
-        max_length=6,
-        min_length=6,
-        error_messages={
-            'required': _('OTP code is required.'),
-            'min_length': _('OTP code must be 6 digits.'),
-            'max_length': _('OTP code must be 6 digits.'),
-        }
-    )
-    otp_id = serializers.UUIDField(
-        required=False,
-        help_text=_('OTP reference ID (for verification)')
-    )
-    purpose = serializers.ChoiceField(
-        choices=[
-            ('login', _('Login')),
-            ('register', _('Register')),
-            ('reset_password', _('Reset Password')),
-        ],
-        default='login',
-        required=False
-    )
+    mobile = serializers.CharField(required=False, max_length=11, validators=[validate_iranian_phone])
+    email = serializers.EmailField(required=False)
+    code = serializers.CharField(required=True, min_length=6, max_length=6)
+    otp_id = serializers.UUIDField(required=True)
 
-    def validate_code(self, value):
-        """بررسی عددی بودن کد"""
-        if not value.isdigit():
-            raise serializers.ValidationError(
-                _('OTP code must contain only digits.')
-            )
-        return value
+    def validate(self, attrs):
+        # بررسی اینکه حداقل یکی از دو فیلد ارسال شده باشد
+        if not attrs.get('mobile') and not attrs.get('email'):
+            raise serializers.ValidationError(_("Mobile or Email is required."))
+
+        # بررسی عددی بودن کد
+        code = attrs.get('code')
+        if not code.isdigit():
+            raise serializers.ValidationError(_('OTP code must contain only digits.'))
+
+        return attrs
 
 
 class PasswordChangeSerializer(serializers.Serializer):

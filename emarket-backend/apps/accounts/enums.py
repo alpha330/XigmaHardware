@@ -9,7 +9,7 @@ class UserRole(models.TextChoices):
     ACCOUNTANT = 'accountant', _('Accountant')
     COURIER = 'courier', _('Courier/Delivery')
     STOCK_KEEPER = 'stock_keeper', _('Stock Keeper')
-    
+
     @classmethod
     def default(cls):
         return cls.CLIENT
@@ -19,7 +19,7 @@ class ProfileType(models.TextChoices):
     """نوع پروفایل - حقیقی یا حقوقی"""
     INDIVIDUAL = 'individual', _('Individual')
     LEGAL = 'legal', _('Legal/Company')
-    
+
     @classmethod
     def default(cls):
         return cls.INDIVIDUAL
@@ -39,6 +39,7 @@ class OTPPurpose(models.TextChoices):
     CHANGE_MOBILE = 'change_mobile', _('Change Mobile')
     CHANGE_EMAIL = 'change_email', _('Change Email')
     VERIFY_PROFILE = 'verify_profile', _('Verify Profile')
+    CHANGE_CONTACT = 'change_contact', _('Change Contact')
 
 
 class WalletTransactionType(models.TextChoices):

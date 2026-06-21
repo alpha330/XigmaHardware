@@ -25,13 +25,13 @@ export default function RootLayout({ children }) {
         <ThemeRegistry>
           {/* ساختار بندی اصلی صفحه */}
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <CartProvider>
             <Header />
-            <main style={{ flex: 1 }}>
-              <CartProvider>
-                {children}
-              </CartProvider>
-            </main>
+              <main style={{ flex: 1 }}>
+                  {children}
+              </main>
             <Footer />
+          </CartProvider>
           </div>
           <LiveChatWidget />
         </ThemeRegistry>
