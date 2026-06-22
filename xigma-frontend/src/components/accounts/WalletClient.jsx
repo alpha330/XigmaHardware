@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { apiFetch } from '../../utils/apiFetch';
-import { useToast } from '../ui/ToastProvider';
+import ToastProvider, { useToast } from '../ui/ToastProvider';
 
 // ================= STYLES =================
 const PageWrapper = styled.div`
@@ -269,10 +269,20 @@ export default function WalletClient() {
           callback_url: `${window.location.origin}/payment/verify`
         })
       });
+      console.log('Payment initiation response:', payRes.redirected);
+      if (payRes.redirected) {
+        // اگر پاسخ مستقیم به درگاه بود، کاربر را به آنجا هدایت کن
+        window.location.href = payRes.url;
+        showToast('در حال انتقال به درگاه پرداخت...', 'info');
+        return;
+      }else {
+        showToast('درگاه پرداخت باز نشد', 'warning');
+      }
 
       if (!payRes.ok) throw new Error(payData.error || 'خطا در اتصال به درگاه.');
+
       const payData = await payRes.json();
-      console.log(payData)
+      console.log('Payment initiation data:', payData);
       sessionStorage.setItem('last_payment_log_id',payData.payment_log_id);
       // هدایت کاربر به بانک
       window.location.href = payData.payment_url;

@@ -106,12 +106,17 @@ class PaymentService:
             payment_log = PaymentLog.objects.select_related('gateway', 'user', 'invoice').get(id=payment_log_id)
         except PaymentLog.DoesNotExist:
             return {'success': False, 'error': 'Payment log not found.'}
-        logger.info(f"Checking Wallet Charge Logic: InvoiceType={getattr(payment_log.invoice, 'invoice_type', 'None')}, Desc={payment_log.description}")
+
         if payment_log.status == PaymentStatus.VERIFIED:
             return {'success': True, 'payment_log': payment_log, 'already_verified': True}
 
         gateway = cls.get_gateway_instance(payment_log.gateway)
         result = gateway.verify_payment(gateway_code=payment_log.gateway_code, amount=payment_log.amount)
+
+        # === Defensive check ===
+        if not result or not isinstance(result, dict):
+            logger.error(f"ZarinPal verify returned invalid result: {result}")
+            return {'success': False, 'error': 'پاسخ نامعتبر از درگاه پرداخت'}
 
         if result.get('success'):
             payment_log.mark_verified(result.get('reference_code'))
@@ -119,51 +124,29 @@ class PaymentService:
             charged_wallet = False
             amount_decimal = Decimal(str(payment_log.amount))
 
-            print("=== [VERIFY DEBUG] START ===")
-            print(f"PaymentLog ID: {payment_log.id}")
-            print(f"Has Invoice: {bool(payment_log.invoice)}")
-
             if payment_log.invoice:
-                print(f"Invoice ID: {payment_log.invoice.id}")
-                print(f"Invoice Type (raw): {payment_log.invoice.invoice_type}")
-                print(f"Is Wallet Charge (property): {payment_log.invoice.is_wallet_charge}")
-
                 from apps.financial.services.invoice_service import InvoiceService
-                InvoiceService.record_payment(...)
+                InvoiceService.record_payment(
+                    invoice=payment_log.invoice,
+                    amount=float(amount_decimal),
+                    payment_method='online_gateway',
+                    reference_code=str(result.get('reference_code', '')),
+                    verified_by=None,
+                )
 
                 if payment_log.invoice.is_wallet_charge:
-                    print("[DEBUG] → Entering wallet deposit block")
+                    vat_rate = Decimal('0.10')
+                    charge_amount = amount_decimal * (1 - vat_rate)
+
                     from apps.accounts.services.wallet_service import WalletService
                     if hasattr(payment_log.user, 'wallet'):
                         WalletService.deposit(
                             wallet=payment_log.user.wallet,
-                            amount=amount_decimal,
-                            description="شارژ کیف پول از طریق درگاه",
+                            amount=charge_amount,
+                            description="شارژ کیف پول از طریق درگاه (پس از کسر ۱۰٪ VAT)",
                             reference_id=str(payment_log.id)
                         )
                         charged_wallet = True
-                        print("[DEBUG] → Wallet deposit SUCCESS")
-                else:
-                    print("[DEBUG] → is_wallet_charge is FALSE")
-            else:
-                print("[DEBUG] → No invoice linked to payment_log")
-
-            print(f"Final charged_wallet: {charged_wallet}")
-            print("=== [VERIFY DEBUG] END ===")
-
-            # else:
-            #     # شارژ مستقیم والت (بدون invoice)
-            #     desc = (payment_log.description or '').lower()
-            #     if 'wallet' in desc or 'شارژ' in desc or 'charge' in desc:
-            #         from apps.accounts.services.wallet_service import WalletService
-            #         if hasattr(payment_log.user, 'wallet'):
-            #             WalletService.deposit(
-            #                 wallet=payment_log.user.wallet,
-            #                 amount=amount_decimal,
-            #                 description="شارژ کیف پول از طریق درگاه (مستقیم)",
-            #                 reference_id=str(payment_log.id)
-            #             )
-            #             charged_wallet = True
 
             logger.info(f"Payment verified successfully. Wallet charged: {charged_wallet}")
             return {
@@ -172,6 +155,8 @@ class PaymentService:
                 'reference_code': result.get('reference_code'),
                 'wallet_charged': charged_wallet
             }
+
+        return {'success': False, 'error': result.get('error', 'Verification failed')}
 
     @staticmethod
     def _get_client_ip(request):

@@ -55,16 +55,20 @@ class ZarinPalGateway(BaseGateway):
             "amount": int(amount),
             "authority": gateway_code
         }
-
         print(f"[ZarinPal] Verifying - Authority: {gateway_code}, Amount: {amount}")
 
         try:
             resp = requests.post(url, json=payload, timeout=30, verify=False)
+
+            # چک کردن وضعیت HTTP
+            if resp.status_code != 200:
+                print(f"[ZarinPal] HTTP Error: {resp.status_code} - {resp.text[:200]}")
+                return {'success': False, 'error': f'HTTP Error {resp.status_code}'}
+
             data = resp.json()
             print(f"[ZarinPal] Verify Response: {data}")
 
             code = data.get('data', {}).get('code')
-
             if code == 100:
                 return {
                     'success': True,
@@ -72,7 +76,6 @@ class ZarinPalGateway(BaseGateway):
                     'data': data,
                 }
             elif code == 101:
-                # Already verified - treat as success
                 return {
                     'success': True,
                     'already_verified': True,

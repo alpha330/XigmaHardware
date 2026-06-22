@@ -86,7 +86,7 @@ class PaymentViewSet(mixins.ListModelMixin,
                 callback_url=data.get('callback_url'),
                 request=request,
             )
-
+            print(f" [PAYMENT RESULT] :{data.get('callback_url')}")
             if result['success']:
                 logger.info(f"Payment created: {result['payment_log'].id}")
                 return Response({
