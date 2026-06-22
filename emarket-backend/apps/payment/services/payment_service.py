@@ -48,7 +48,7 @@ class PaymentService:
             gateway_config = cls.get_default_gateway()
 
         if amount < gateway_config.min_amount or amount > gateway_config.max_amount:
-            raise ValueError(_('Amount is out of allowed range.'))
+            raise ValueError(_('مقدار وارد شده خارج از محدوده استاندارد است '))
 
         payment_log = PaymentLog.objects.create(
             user=user,

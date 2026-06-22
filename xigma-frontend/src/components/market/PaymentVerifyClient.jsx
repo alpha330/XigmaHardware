@@ -83,8 +83,9 @@ export default function PaymentVerifyClient() {
       let paymentLogId = params.payment_log_id || sessionStorage.getItem('last_payment_log_id');
 
       if (paymentLogId) {
+        // فقط وضعیت را چک کن (callback را کال نکن)
         // eslint-disable-next-line react-hooks/immutability
-        triggerBackendCallback(paymentLogId, params);
+        checkWalletStatus(paymentLogId, params);
       } else {
         setTimeout(() => {
           setStatus('success');
