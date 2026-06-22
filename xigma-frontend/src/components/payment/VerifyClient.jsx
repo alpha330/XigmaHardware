@@ -98,6 +98,7 @@ export default function VerifyClient() {
     // === اولویت با URL (جلوگیری از CORS) ===
     if (params.status) {
       if (params.status === 'success') {
+        console.log('پرداخت موفقیت‌آمیز بود. اطلاعات:', params);
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setStatus('success');
         setMessage('پرداخت با موفقیت انجام شد و کیف پول شارژ گردید.');
@@ -138,6 +139,7 @@ export default function VerifyClient() {
         const result = await res.json();
 
         if (res.ok && result.success) {
+          console.log('تایید پرداخت موفقیت‌آمیز بود. پاسخ سرور:', result);
           setStatus('success');
           setMessage(result.message || 'پرداخت با موفقیت تایید شد.');
           setData({

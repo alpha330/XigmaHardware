@@ -1,10 +1,10 @@
-// src/components/market/PaymentVerifyClient.jsx
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { apiFetch } from '../../utils/apiFetch';
 
 const PageWrapper = styled.div`
   max-width: 620px;
@@ -17,7 +17,8 @@ const StatusCard = styled.div`
   background-color: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme, status }) =>
     status === 'success' ? theme.colors.success :
-    status === 'error' ? theme.colors.error : theme.colors.border};
+    status === 'error' ? theme.colors.error :
+    status === 'verifying' ? theme.colors.primary : theme.colors.border};
   border-radius: 16px;
   padding: 3rem 2.5rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
@@ -26,6 +27,13 @@ const StatusCard = styled.div`
 const Icon = styled.div`
   font-size: 4.5rem;
   margin-bottom: 1.5rem;
+  animation: ${({ status }) =>
+    status === 'verifying' ? 'spin 1.2s linear infinite' : 'none'};
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 `;
 
 const Title = styled.h1`
@@ -43,24 +51,6 @@ const Message = styled.p`
   margin-bottom: 2rem;
 `;
 
-const InfoBox = styled.div`
-  background-color: ${({ theme }) => theme.colors.background};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 10px;
-  padding: 1.2rem;
-  margin-bottom: 1.5rem;
-  text-align: left;
-  font-size: 0.95rem;
-
-  .row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.6rem;
-  }
-  .label { color: ${({ theme }) => theme.colors.textMuted}; }
-  .value { font-weight: 600; color: ${({ theme }) => theme.colors.textMain}; font-family: monospace; }
-`;
-
 const Button = styled(Link)`
   display: inline-block;
   background-color: ${({ theme, variant }) =>
@@ -71,12 +61,6 @@ const Button = styled(Link)`
   font-weight: 600;
   text-decoration: none;
   margin-top: 1rem;
-  transition: all 0.2s;
-
-  &:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
 `;
 
 export default function PaymentVerifyClient() {
@@ -93,58 +77,73 @@ export default function PaymentVerifyClient() {
 
     const params = Object.fromEntries(searchParams.entries());
 
-    // === تشخیص قوی وضعیت از URL ===
-    const isSuccess =
-      params.status === 'success' ||
-      params.Status === 'OK' ||
-      params.status === 'success';
+    // === حالت مستقیم از زرین‌پال ===
+    if (params.Status === 'OK') {
+      setStatus('verifying');
+      setMessage('در حال تایید پرداخت و شارژ کیف پول...');
 
-    const isError = params.status === 'error' || params.message;
+      // گرفتن payment_log_id از URL یا localStorage
+      let paymentLogId = params.payment_log_id || params.log_id;
 
-    if (isSuccess || isError) {
-      if (isSuccess) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setStatus('success');
-        setMessage('پرداخت با موفقیت انجام شد و کیف پول شارژ گردید.');
-        setData({
-          refId: params.ref_id || params.Authority,
-          paymentLogId: params.payment_log_id,
-          amount: params.amount,
-        });
+      if (!paymentLogId) {
+        paymentLogId = localStorage.getItem('last_payment_log_id');
+      }
+
+      if (paymentLogId) {
+        checkPaymentStatus(paymentLogId, params);
       } else {
-        setStatus('error');
-        setMessage(
-          params.message === 'verify_failed'
-            ? 'تایید پرداخت توسط درگاه ناموفق بود.'
-            : params.message || 'پرداخت با خطا مواجه شد.'
-        );
-        setData({ paymentLogId: params.payment_log_id });
+        // اگر هیچ شناسه‌ای نبود
+        setTimeout(() => {
+          setStatus('success');
+          setMessage('پرداخت در درگاه موفق بود. لطفاً وضعیت کیف پول را بررسی کنید.');
+          setData({ refId: params.Authority });
+        }, 2000);
       }
       return;
     }
 
-    // === حالت قدیمی (فقط اگر هیچ status در URL نبود) ===
-    const paymentLogId = params.clientrefid || params.Authority || params.log_id || params.payment_log_id;
-
-    if (!paymentLogId) {
+    if (params.status === 'error' || params.message) {
       setStatus('error');
-      setMessage('شناسه تراکنش یافت نشد.');
+      setMessage(params.message || 'پرداخت با خطا مواجه شد.');
       return;
     }
 
-    // در این حالت چون ممکنه پاسخ JSON نباشد، فعلاً غیرفعال می‌کنیم
     setStatus('error');
-    setMessage('لطفاً صفحه را رفرش کنید یا دوباره تلاش کنید.');
+    setMessage('شناسه تراکنش یافت نشد.');
   }, [searchParams]);
+
+  const checkPaymentStatus = async (paymentLogId, params) => {
+    try {
+      const res = await apiFetch(`/api/v1/payment/status/${paymentLogId}/`);
+      const result = await res.json();
+
+      if (result.wallet_charged || result.status === 'VERIFIED') {
+        setStatus('success');
+        setMessage('پرداخت با موفقیت انجام شد و کیف پول شارژ گردید.');
+        setData({
+          refId: params.Authority,
+          paymentLogId: paymentLogId,
+          amount: params.amount,
+        });
+      } else {
+        // هنوز شارژ نشده، دوباره امتحان کن (polling ساده)
+        setTimeout(() => checkPaymentStatus(paymentLogId, params), 2500);
+      }
+    } catch (error) {
+      console.error(error);
+      setStatus('success');
+      setMessage('پرداخت در درگاه موفق بود. وضعیت کیف پول را از صفحه والت بررسی کنید.');
+      setData({ refId: params.Authority });
+    }
+  };
 
   return (
     <PageWrapper>
       <StatusCard status={status}>
-
-        {status === 'loading' && (
+        {(status === 'loading' || status === 'verifying') && (
           <>
-            <Icon>⏳</Icon>
-            <Title status="loading">در حال بررسی تراکنش...</Title>
+            <Icon status={status}>⏳</Icon>
+            <Title status="verifying">در حال پردازش...</Title>
             <Message>{message}</Message>
           </>
         )}
@@ -155,21 +154,10 @@ export default function PaymentVerifyClient() {
             <Title status="success">پرداخت موفق بود</Title>
             <Message>{message}</Message>
 
-            {data && (
-              <InfoBox>
-                {data.refId && (
-                  <div className="row">
-                    <span className="label">کد پیگیری:</span>
-                    <span className="value">{data.refId}</span>
-                  </div>
-                )}
-                {data.amount && (
-                  <div className="row">
-                    <span className="label">مبلغ شارژ شده:</span>
-                    <span className="value">{Number(data.amount).toLocaleString()} ریال</span>
-                  </div>
-                )}
-              </InfoBox>
+            {data && data.amount && (
+              <div style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>
+                مبلغ: <strong>{Number(data.amount).toLocaleString()} ریال</strong>
+              </div>
             )}
 
             <Button href="/accounts/wallet" variant="success">
@@ -184,17 +172,13 @@ export default function PaymentVerifyClient() {
             <Title status="error">پرداخت ناموفق</Title>
             <Message>{message}</Message>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Button href="/basket/cart" variant="error">
-                بازگشت به سبد خرید
-              </Button>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <Button href="/accounts/wallet" variant="error">
                 مشاهده کیف پول
               </Button>
             </div>
           </>
         )}
-
       </StatusCard>
     </PageWrapper>
   );
