@@ -1,41 +1,26 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
+import DatePicker from 'react-multi-date-picker';
+import persian from 'react-date-object/calendars/persian';
+import persian_fa from 'react-date-object/locales/persian_fa';
 import styled from '@emotion/styled';
 
-// ==================== STYLED COMPONENTS ====================
+// ==================== STYLED COMPONENTS (بهبود یافته برای دارک مود) ====================
 const Container = styled.div`
   max-width: 1100px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
 `;
 
-const Header = styled.div`
-  margin-bottom: 2rem;
-`;
-
-const Title = styled.h1`
-  font-size: 2rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors?.textPrimary || '#111827'};
-  margin-bottom: 0.5rem;
-`;
-
-const Subtitle = styled.p`
-  color: ${({ theme }) => theme.colors?.textMuted || '#6b7280'};
-  font-size: 1rem;
-`;
-
 const TabContainer = styled.div`
   display: flex;
   gap: 8px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
+  border-bottom: 1px solid ${({ theme }) => theme.colors?.border || '#334155'};
   margin-bottom: 2rem;
   overflow-x: auto;
   scrollbar-width: none;
-  -ms-overflow-style: none;
-  &::-webkit-scrollbar { display: none; }
 `;
 
 const TabButton = styled.button`
@@ -44,20 +29,20 @@ const TabButton = styled.button`
   font-weight: 600;
   color: ${({ active, theme }) => 
     active 
-      ? (theme.colors?.primary || '#3b82f6') 
-      : (theme.colors?.textSecondary || '#4b5563')};
+      ? (theme.colors?.primary || '#60a5fa') 
+      : (theme.colors?.textSecondary || '#94a3b8')};
   background: none;
   border: none;
   border-bottom: 3px solid ${({ active, theme }) => 
     active 
-      ? (theme.colors?.primary || '#3b82f6') 
+      ? (theme.colors?.primary || '#60a5fa') 
       : 'transparent'};
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors?.primary || '#3b82f6'};
+    color: ${({ theme }) => theme.colors?.primary || '#60a5fa'};
   }
 `;
 
@@ -84,22 +69,26 @@ const FormGroup = styled.div`
 const Label = styled.label`
   font-size: 14px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors?.textSecondary || '#4b5563'};
+  color: ${({ theme }) => theme.colors?.textSecondary || '#cbd5e1'};
 `;
 
-const Input = styled.input`
+const StyledInput = styled.input`
   padding: 12px 16px;
-  border: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
+  border: 1px solid ${({ theme }) => theme.colors?.border || '#475569'};
   border-radius: 10px;
   font-size: 15px;
-  background: ${({ theme }) => theme.colors?.background || '#fff'};
-  color: ${({ theme }) => theme.colors?.textPrimary || '#111827'};
+  background: ${({ theme }) => theme.colors?.surface || '#1e293b'};
+  color: ${({ theme }) => theme.colors?.textPrimary || '#f1f5f9'};
   transition: all 0.2s ease;
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.colors?.primary || '#3b82f6'};
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: ${({ theme }) => theme.colors?.primary || '#60a5fa'};
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+  }
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors?.textMuted || '#64748b'};
   }
 `;
 
@@ -117,7 +106,6 @@ const Button = styled.button`
 
   &:hover {
     opacity: 0.9;
-    transform: translateY(-1px);
   }
 `;
 
@@ -137,21 +125,21 @@ export default function ProfileClient() {
       case 'personal':
         return <PersonalInfoForm />;
       case 'account-type':
-        return <AccountTypeSection />;
+        return <div>نوع حساب - در حال توسعه</div>;
       case 'security':
-        return <SecuritySection />;
+        return <div>امنیت - در حال توسعه</div>;
       case 'contact':
-        return <ContactVerificationSection />;
+        return <div>تماس و تأیید - در حال توسعه</div>;
       default:
         return <PersonalInfoForm />;
     }
   };
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <Container>
       <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>پروفایل کاربری</h1>
-        <p style={{ color: '#6b7280' }}>اطلاعات حساب خود را مدیریت کنید</p>
+        <Title>پروفایل کاربری</Title>
+        <Subtitle>اطلاعات حساب خود را مدیریت کنید</Subtitle>
       </div>
 
       <TabContainer>
@@ -169,17 +157,17 @@ export default function ProfileClient() {
       <TabContent key={activeTab}>
         {renderTabContent()}
       </TabContent>
-    </div>
+    </Container>
   );
 }
 
-// ==================== PERSONAL INFO FORM (با react-hook-form) ====================
+// ==================== PERSONAL INFO FORM ====================
 function PersonalInfoForm() {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  const { control, register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
       first_name: '',
       last_name: '',
-      birth_date: '',
+      birth_date: null,
       phone: '',
       postal_code: '',
       address: '',
@@ -187,9 +175,8 @@ function PersonalInfoForm() {
   });
 
   const onSubmit = async (data) => {
-    console.log('Submitting:', data);
-    // TODO: ارسال به API
-    alert('اطلاعات با موفقیت ذخیره شد (موقت)');
+    console.log('Form Data:', data);
+    alert('اطلاعات ذخیره شد (موقت)');
   };
 
   return (
@@ -197,34 +184,59 @@ function PersonalInfoForm() {
       <FormGrid>
         <FormGroup>
           <Label>نام</Label>
-          <Input {...register('first_name', { required: 'نام الزامی است' })} placeholder="نام" />
-          {errors.first_name && <span style={{ color: 'red', fontSize: '13px' }}>{errors.first_name.message}</span>}
+          <StyledInput {...register('first_name', { required: 'نام الزامی است' })} placeholder="نام" />
         </FormGroup>
 
         <FormGroup>
           <Label>نام خانوادگی</Label>
-          <Input {...register('last_name', { required: 'نام خانوادگی الزامی است' })} placeholder="نام خانوادگی" />
-          {errors.last_name && <span style={{ color: 'red', fontSize: '13px' }}>{errors.last_name.message}</span>}
+          <StyledInput {...register('last_name', { required: 'نام خانوادگی الزامی است' })} placeholder="نام خانوادگی" />
         </FormGroup>
 
+        {/* تاریخ تولد شمسی */}
         <FormGroup>
-          <Label>تاریخ تولد</Label>
-          <Input type="date" {...register('birth_date')} />
+          <Label>تاریخ تولد (شمسی)</Label>
+          <Controller
+            name="birth_date"
+            control={control}
+            render={({ field }) => (
+              <DatePicker
+                value={field.value}
+                onChange={field.onChange}
+                calendar={persian}
+                locale={persian_fa}
+                inputClass="custom-date-input"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  border: '1px solid #475569',
+                  background: '#1e293b',
+                  color: '#f1f5f9',
+                  fontSize: '15px'
+                }}
+              />
+            )}
+          />
         </FormGroup>
 
         <FormGroup>
           <Label>شماره تلفن</Label>
-          <Input {...register('phone')} placeholder="0912xxxxxxx" />
+          <StyledInput {...register('phone')} placeholder="0912xxxxxxx" />
         </FormGroup>
 
         <FormGroup>
           <Label>کد پستی</Label>
-          <Input {...register('postal_code')} placeholder="کد پستی" />
+          <StyledInput {...register('postal_code')} placeholder="کد پستی" />
         </FormGroup>
 
         <FormGroup style={{ gridColumn: '1 / -1' }}>
           <Label>آدرس کامل</Label>
-          <Input as="textarea" {...register('address')} placeholder="آدرس کامل" style={{ minHeight: '100px', resize: 'vertical' }} />
+          <StyledInput
+            as="textarea"
+            {...register('address')}
+            placeholder="آدرس کامل"
+            style={{ minHeight: '100px', resize: 'vertical' }}
+          />
         </FormGroup>
       </FormGrid>
 
@@ -233,17 +245,4 @@ function PersonalInfoForm() {
       </Button>
     </form>
   );
-}
-
-// Placeholder sections for other tabs
-function AccountTypeSection() {
-  return <div>نوع حساب (حقیقی / حقوقی) - در حال توسعه</div>;
-}
-
-function SecuritySection() {
-  return <div>تغییر رمز عبور - در حال توسعه</div>;
-}
-
-function ContactVerificationSection() {
-  return <div>ایمیل و موبایل + OTP - در حال توسعه</div>;
 }
