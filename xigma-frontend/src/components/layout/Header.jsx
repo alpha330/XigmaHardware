@@ -1,382 +1,343 @@
-// src/components/layout/Header.jsx
 'use client';
 
-import React, { useContext, useEffect, useState } from 'react';
-import styled from '@emotion/styled';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import Cookies from 'js-cookie';
-import { ThemeModeContext } from '../../theme/ThemeRegistry';
-import SearchBar from './SearchBar';
-import { apiFetch } from '../../utils/apiFetch';
-import { useCart } from '@/context/CartContext';
+import { usePathname, useRouter } from 'next/navigation';
+import styled from '@emotion/styled';
+import { useThemeMode } from '../../context/ThemeModeContext'; // فرض بر این است که کانتекст تم وجود دارد
 
+import { useCart } from '../../context/CartContext';
+import Cookies from 'js-cookie';
+import { apiFetch } from '../../utils/apiFetch';
+
+// ==================== STYLED COMPONENTS ====================
 const HeaderWrapper = styled.header`
   position: sticky;
   top: 0;
   z-index: 1000;
-  background-color: ${({ theme, isScrolled }) =>
-    isScrolled ? theme.colors.surface : theme.colors.background};
-  box-shadow: ${({ isScrolled }) =>
-    isScrolled ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none'};
-  transition: all 0.3s ease;
-  padding: 1rem 2rem;
+  background: ${({ theme, isScrolled }) => 
+    isScrolled 
+      ? (theme.colors?.surface || '#ffffff') 
+      : (theme.colors?.background || '#ffffff')};
+  border-bottom: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: ${({ isScrolled }) => isScrolled ? '0 4px 6px -1px rgb(0 0 0 / 0.1)' : 'none'};
+`;
+
+const HeaderContent = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 72px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  gap: 2rem;
-
-  @media (max-width: 768px) {
-    flex-wrap: wrap;
-    gap: 1rem;
-    padding: 1rem;
-  }
-`;
-
-const CartWrapper = styled.div`
-  position: relative;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 0.5rem;
-`;
-
-const CartBadge = styled.span`
-  position: absolute;
-  top: 0;
-  right: 0;
-  background-color: ${({ theme }) => theme.colors.error};
-  color: white;
-  font-size: 0.7rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 50%;
+  gap: 24px;
 `;
 
 const Logo = styled(Link)`
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: ${({ theme }) => theme.colors.primary};
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+  &:hover { transform: scale(1.02); }
+`;
+
+const LogoImage = styled.img`
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid ${({ theme }) => theme.colors?.primary || '#3b82f6'};
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+`;
+
+const LogoText = styled.span`
+  font-size: 22px;
+  font-weight: 800;
+  color: ${({ theme }) => theme.colors?.textPrimary || '#111827'};
+  letter-spacing: -0.5px;
+`;
+
+const Nav = styled.nav`
   display: flex;
   align-items: center;
   gap: 8px;
-  white-space: nowrap;
-`;
-
-const NavLinks = styled.nav`
-  display: flex;
-  gap: 1.5rem;
-
-  @media (max-width: 1024px) {
-    display: none;
-  }
+  @media (max-width: 1024px) { display: none; }
 `;
 
 const NavItem = styled(Link)`
-  color: ${({ theme }) => theme.colors.textMain};
-  font-weight: 500;
-  transition: color 0.2s ease;
-  white-space: nowrap;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors?.textSecondary || '#4b5563'};
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors?.textPrimary || '#111827'};
+    background: ${({ theme }) => theme.colors?.hover || '#f3f4f6'};
   }
+
+  &[data-active='true'] {
+    color: ${({ theme }) => theme.colors?.primary || '#3b82f6'};
+    background: ${({ theme }) => theme.colors?.primaryLight || '#eff6ff'};
+  }
+`;
+
+const ShopDropdown = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+const DropdownContent = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 620px;
+  background: ${({ theme }) => theme.colors?.surface || '#fff'};
+  border: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  padding: 24px;
+  display: ${({ isOpen }) => (isOpen ? 'grid' : 'none')};
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  z-index: 100;
+  opacity: ${({ isOpen }) => (isOpen ? 1 : 0)};
+  transform: ${({ isOpen }) => (isOpen ? 'translateY(0)' : 'translateY(10px)')};
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+`;
+
+const DropdownSection = styled.div``;
+
+const DropdownTitle = styled.div`
+  font-size: 13px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors?.textMuted || '#6b7280'};
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
+`;
+
+const DropdownLink = styled(Link)`
+  display: block;
+  padding: 8px 0;
+  font-size: 14.5px;
+  color: ${({ theme }) => theme.colors?.textSecondary || '#4b5563'};
+  text-decoration: none;
+  transition: color 0.15s ease;
+  &:hover { color: ${({ theme }) => theme.colors?.primary || '#3b82f6'}; }
 `;
 
 const Actions = styled.div`
   display: flex;
   align-items: center;
-  gap: 1rem;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    justify-content: space-between;
-    order: 3;
-  }
+  gap: 12px;
 `;
 
-const SearchContainer = styled.div`
-  flex: 1;
-  max-width: 500px;
-
-  @media (max-width: 768px) {
-    order: 2;
-    max-width: 100%;
-    min-width: 200px;
-  }
-`;
-
-const ThemeButton = styled.button`
-  background: none;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.textMain};
-  padding: 0.5rem;
-  border-radius: 8px;
-  cursor: pointer;
+const IconButton = styled.button`
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  color: ${({ theme }) => theme.colors?.textSecondary || '#4b5563'};
+  cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
 
   &:hover {
-    background-color: ${({ theme }) => theme.colors.surface};
+    background: ${({ theme }) => theme.colors?.hover || '#f3f4f6'};
+    color: ${({ theme }) => theme.colors?.textPrimary || '#111827'};
+    transform: translateY(-1px);
   }
 `;
 
-const PrimaryButton = styled(Link)`
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: #fff !important;
-  padding: 0.5rem 1.2rem;
-  border-radius: 8px;
-  font-weight: bold;
-  transition: background-color 0.2s ease;
-  white-space: nowrap;
-
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.secondary};
-  }
+const CartBadge = styled.span`
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: ${({ theme }) => theme.colors?.primary || '#3b82f6'};
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
 `;
 
-const UserMenuWrapper = styled.div`
-  position: relative; display: flex; align-items: center; cursor: pointer; padding: 0.5rem 0;
-  &:hover > div { opacity: 1; visibility: visible; transform: translateY(0); }
+const ThemeToggle = styled(IconButton)`
+  font-size: 20px;
 `;
 
-const Avatar = styled.div`
-  width: 42px; height: 42px; border-radius: 50%;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary} 0%, ${({ theme }) => theme.colors.secondary} 100%);
-  color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem;
-  border: 2px solid ${({ theme }) => theme.colors.border}; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden;
-  img { width: 100%; height: 100%; object-fit: cover; }
-`;
+const UserSection = styled.div` display: flex; align-items: center; gap: 12px; `;
 
-const DropdownMenu = styled.div`
-  position: absolute; top: 100%; left: 0; background-color: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border}; border-radius: 12px; min-width: 240px;
-  opacity: 0; visibility: hidden; transform: translateY(15px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; padding: 0.5rem; z-index: 1001;
-`;
-
-const DropdownHeader = styled.div`
-  padding: 1rem; border-bottom: 1px solid ${({ theme }) => theme.colors.border}; margin-bottom: 0.5rem;
-  strong { display: block; color: ${({ theme }) => theme.colors.textMain}; font-size: 1rem; margin-bottom: 0.2rem; }
-  span { color: ${({ theme }) => theme.colors.textMuted}; font-size: 0.8rem; }
-`;
-
-const DropdownItem = styled(Link)`
-  padding: 0.7rem 1rem; color: ${({ theme }) => theme.colors.textMain}; font-size: 0.9rem; border-radius: 8px;
-  display: flex; align-items: center; gap: 0.8rem; transition: background-color 0.2s ease;
-  &:hover { background-color: ${({ theme }) => theme.colors.background}; color: ${({ theme }) => theme.colors.primary}; }
-`;
-
-const MenuDivider = styled.div`
-  height: 1px; background-color: ${({ theme }) => theme.colors.border}; margin: 0.5rem 0;
-`;
-
-const MenuBadge = styled.span`
-  background-color: ${({ theme, colorType }) => theme.colors[colorType] || theme.colors.primary};
-  color: #fff; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 10px; margin-right: auto;
-`;
-
-const LogoutButton = styled.button`
-  width: 100%; text-align: right; padding: 0.8rem 1rem; color: ${({ theme }) => theme.colors.error};
-  background: none; border: none; font-family: inherit; font-size: 0.95rem; cursor: pointer; border-radius: 8px;
-  display: flex; align-items: center; gap: 0.8rem; transition: background-color 0.2s ease;
-  margin-top: 0.5rem; border-top: 1px solid ${({ theme }) => theme.colors.border};
-  &:hover { background-color: ${({ theme }) => `${theme.colors.error}15`}; }
-`;
-
+// ==================== HEADER COMPONENT ====================
 export default function Header() {
-  const router = useRouter();
   const pathname = usePathname();
-  const { isDarkMode, toggleTheme } = useContext(ThemeModeContext);
+  const router = useRouter();
+  const { isDarkMode, toggleTheme } = useThemeMode();
+  const { cart } = useCart();
+
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isShopOpen, setIsShopOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
-  const [userData, setUserData] = useState(null);
-  const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState(null);
-  const { cart, fetchCart } = useCart();
 
-  const handleClearCart = async () => {
-    await apiFetch('/api/v1/basket/carts/clear/', { method: 'POST' });
-    fetchCart(); // فراخوانی مجدد برای آپدیت هدر و Badge
-  };
-  const totalItems = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
+  // Scroll effect
   useEffect(() => {
-    setMounted(true);
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-    const checkAuth = async () => {
-        const token = Cookies.get('token');
-        if (!token) {
-            setIsLoggedIn(false);
-            return;
-        }
-
-        // اگر توکن هست، اطلاعات را آپدیت کن
-        setIsLoggedIn(true);
-        try {
-            const [profileRes, userRes] = await Promise.all([
-                apiFetch('/api/v1/accounts/me/profile/'),
-                apiFetch('/api/v1/accounts/me/')
-            ]);
-
-            if (profileRes.ok) {
-                const data = await profileRes.json();
-                setUserProfile(data.profile);
-            }
-            if (userRes.ok) {
-                const data = await userRes.json();
-                setUserData(data.user);
-            }
-        } catch (error) {
-            console.error("Auth check failed", error);
-        }
-    };
-
-    checkAuth();
-  }, [pathname]);
-
-  const stockAllowedRoles = ['super_admin', 'stock_keeper'];
-  const handleLogout = async () => {
-    try {
-      const refresh = Cookies.get('refresh');
-      if (refresh) {
-        // ارسال دقیق کلید refresh به همراه توکن Bearer (توسط apiFetch)
-        await apiFetch('/api/v1/accounts/auth/logout/', {
-          method: 'POST',
-          body: JSON.stringify({ refresh: refresh })
-        });
-      }
-    } catch (error) {
-
-    } finally {
-      // در هر صورت (حتی اگر سرور ارور داد) کوکی‌ها پاک شده و کاربر خارج می‌شود
-      Cookies.remove('token', { path: '/' });
-      Cookies.remove('refresh', { path: '/' });
-      setIsLoggedIn(false);
-      setUserProfile(null);
-      router.push('/');
-      router.refresh();
+  // Auth check
+  useEffect(() => {
+    const token = Cookies.get('token');
+    setIsLoggedIn(!!token);
+    if (token) {
+      // در پروژه واقعی اینجا پروفایل کاربر رو می‌گیریم
+      setUser({ name: 'علی رضایی', avatar: null });
     }
-  };
+  }, []);
 
-  const displayName = userData?.first_name ? `${userData.first_name} ${userData.last_name || ''}` : 'کاربر سایت';
-  const initial = userData?.first_name ? userData.first_name.charAt(0) : 'U';
-  // متغیرهای دسترسی (ممکن است بک‌اند شما از is_superuser یا role یا گروه استفاده کند)
-  const isSuperuser = userProfile?.is_superuser;
-  const role = userProfile?.role || userProfile?.group || 'client'; // فرض می‌کنیم نقش کلاینت معمولی است
+  const cartCount = cart?.items?.length || 0;
+
+  const isActive = (path) => pathname === path || pathname.startsWith(path + '/');
+
+  const mainNav = [
+    { label: 'خانه', href: '/' },
+    { label: 'فروشگاه', href: '/market', hasDropdown: true },
+    { label: 'اخبار و مقالات', href: '/news' },
+    { label: 'بررسی‌های تخصصی', href: '/expert-reviews' },
+    { label: 'پشتیبانی', href: '/support' },
+  ];
+
+  // نمونه دسته‌بندی و برند (در آینده از API می‌گیریم)
+  const categories = [
+    { id: 1, name: 'سرور و تجهیزات دیتاسنتر', href: '/market?category=1' },
+    { id: 2, name: 'تجهیزات شبکه', href: '/market?category=2' },
+    { id: 3, name: 'قطعات کامپیوتر', href: '/market?category=3' },
+    { id: 4, name: 'ذخیره‌سازی', href: '/market?category=4' },
+  ];
+
+  const brands = [
+    { id: 1, name: 'HP', href: '/market?brand=1' },
+    { id: 2, name: 'Cisco', href: '/market?brand=2' },
+    { id: 3, name: 'Dell', href: '/market?brand=3' },
+    { id: 4, name: 'Lenovo', href: '/market?brand=4' },
+  ];
 
   return (
     <HeaderWrapper isScrolled={isScrolled}>
-      <Logo href="/"><span>Xigma</span>Hardware</Logo>
-      <SearchContainer><SearchBar /></SearchContainer>
-      <NavLinks>
-        <NavItem href="/market">فروشگاه</NavItem>
-        <NavItem href="/market?category=servers">سرورها</NavItem>
-        <NavItem href="/support">پشتیبانی</NavItem>
-      </NavLinks>
-      <Actions>
-        <ThemeButton onClick={toggleTheme} title="تغییر تم">
-          {mounted && (isDarkMode ? '☀️' : '🌙')}
-        </ThemeButton>
-        <CartWrapper>
-          <NavItem href="/basket/cart">🛒</NavItem>
-          {totalItems > 0 && <CartBadge>{totalItems}</CartBadge>}
+      <HeaderContent>
+        {/* LOGO */}
+        <Logo href="/">
+          <LogoImage 
+            src="/images/logos/xigma-logo.png" 
+            alt="XigmaHardware" 
+            onError={(e) => { e.target.src = 'https://via.placeholder.com/42/3b82f6/ffffff?text=XH'; }}
+          />
+          <LogoText>XigmaHardware</LogoText>
+        </Logo>
 
-          <DropdownMenu>
-            {(!cart || cart.items?.length === 0) ? (
-              <div style={{ padding: '1rem', textAlign: 'center' }}>سبد خرید خالی است</div>
+        {/* NAVIGATION */}
+        <Nav>
+          {mainNav.map((item) => 
+            item.hasDropdown ? (
+              <ShopDropdown 
+                key={item.label}
+                onMouseEnter={() => setIsShopOpen(true)}
+                onMouseLeave={() => setIsShopOpen(false)}
+              >
+                <NavItem href={item.href} data-active={isActive(item.href)}>
+                  {item.label}
+                </NavItem>
+
+                <DropdownContent isOpen={isShopOpen}>
+                  <DropdownSection>
+                    <DropdownTitle>دسته‌بندی‌ها</DropdownTitle>
+                    {categories.map(cat => (
+                      <DropdownLink key={cat.id} href={cat.href}>{cat.name}</DropdownLink>
+                    ))}
+                    <DropdownLink href="/market" style={{ marginTop: '8px', fontWeight: 600 }}>
+                      مشاهده همه دسته‌ها →
+                    </DropdownLink>
+                  </DropdownSection>
+
+                  <DropdownSection>
+                    <DropdownTitle>برندهای محبوب</DropdownTitle>
+                    {brands.map(brand => (
+                      <DropdownLink key={brand.id} href={brand.href}>{brand.name}</DropdownLink>
+                    ))}
+                    <DropdownLink href="/market" style={{ marginTop: '8px', fontWeight: 600 }}>
+                      همه برندها →
+                    </DropdownLink>
+                  </DropdownSection>
+                </DropdownContent>
+              </ShopDropdown>
             ) : (
-              <>
-                {cart.items.map((item) => (
-                  <DropdownItem key={item.id} href="/basket/cart">
-                    {item.product_name} x {item.quantity}
-                  </DropdownItem>
-                ))}
-                <MenuDivider />
-                <div style={{ padding: '0.5rem 1rem', fontWeight: 'bold' }}>
-                  مجموع: {cart.total_price?.toLocaleString()} تومان
-                </div>
-                <LogoutButton onClick={handleClearCart}>خالی کردن سبد</LogoutButton>
-              </>
-            )}
-          </DropdownMenu>
-        </CartWrapper>
+              <NavItem 
+                key={item.label}
+                href={item.href} 
+                data-active={isActive(item.href)}
+              >
+                {item.label}
+              </NavItem>
+            )
+          )}
+        </Nav>
 
-        {mounted && (
-          isLoggedIn ? (
-            <UserMenuWrapper>
-              <Avatar>
-                {userProfile?.avatar ? <img src={userProfile.avatar_url} alt="Avatar" /> : initial}
-              </Avatar>
-              <DropdownMenu>
-                <DropdownHeader>
-                  <strong>{displayName}</strong>
-                  <span>{userProfile?.email || userProfile?.mobile || ''}</span>
-                </DropdownHeader>
+        {/* ACTIONS */}
+        <Actions>
+          {/* Theme Toggle */}
+          <ThemeToggle onClick={toggleTheme} title={isDarkMode ? 'تم روشن' : 'تم تیره'}>
+            {isDarkMode ? '☀️' : '🌙'}
+          </ThemeToggle>
 
-                {/* لینک‌های عمومی پروفایل */}
-                <DropdownItem href="/accounts/profile">👤 پروفایل کاربری</DropdownItem>
-                <DropdownItem href="/accounts/wallet">💰 کیف پول و تراکنش‌ها</DropdownItem>
+          {/* Cart */}
+          <IconButton as={Link} href="/basket/cart" title="سبد خرید">
+            🛒
+            {cartCount > 0 && <CartBadge>{cartCount}</CartBadge>}
+          </IconButton>
 
-                {/* لینک‌های مخصوص خریدار معمولی */}
-                {role === 'client' && !isSuperuser && (
-                  <>
-                    <DropdownItem href="/accounts/invoices">💳 سفارشات و فاکتورها</DropdownItem>
-                    <DropdownItem href="/support">🎫 تیکت‌های پشتیبانی</DropdownItem>
-                  </>
-                )}
-
-                {/* --- لینک‌های مخصوص مدیران و کارمندان --- */}
-                {(isSuperuser || role !== 'client') && <MenuDivider />}
-
-                {isSuperuser && (
-                  <DropdownItem href="/admin-panel">
-                    👑 پنل مدیریت کل <MenuBadge colorType="error">Super</MenuBadge>
-                  </DropdownItem>
-                )}
-
-                {(isSuperuser || role === 'financial') && (
-                  <DropdownItem href="/financial-panel">
-                    💳 مدیریت فاکتورها و مالی <MenuBadge colorType="success">Fin</MenuBadge>
-                  </DropdownItem>
-                )}
-
-                {user && (user.is_superuser || stockAllowedRoles.includes(user.role)) && (
-                  <>
-                    <DropdownItem href="/admin/stock/products">
-                      ⚙️ داشبورد مدیریت کالاها
-                    </DropdownItem>
-                    <DropdownItem href="/admin/stock/warehouse">
-                      ⚙️ داشبورد مدیریت انبارها
-                    </DropdownItem>
-                    <DropdownItem href="/admin/stock/catalog">
-                      ⚙️ داشبورد مدیریت گروه های کالا
-                    </DropdownItem>
-                  </>
-                )}
-
-                {(isSuperuser || role === 'logistic') && (
-                  <DropdownItem href="/logistic-panel">
-                    🚚 مدیریت ارسال و پیک <MenuBadge colorType="primary">Logis</MenuBadge>
-                  </DropdownItem>
-                )}
-
-                {(isSuperuser || role === 'support') && (
-                  <DropdownItem href="/support-panel">
-                    🎧 مدیریت تیکت‌ها و چت <MenuBadge colorType="primary">Supp</MenuBadge>
-                  </DropdownItem>
-                )}
-
-                <LogoutButton onClick={handleLogout}>🚪 خروج از حساب</LogoutButton>
-              </DropdownMenu>
-            </UserMenuWrapper>
+          {/* User */}
+          {isLoggedIn && user ? (
+            <UserSection>
+              <IconButton as={Link} href="/accounts/profile" title="حساب کاربری">
+                👤
+              </IconButton>
+            </UserSection>
           ) : (
-            <PrimaryButton href="/auth/login">ورود / ثبت‌نام</PrimaryButton>
-          )
-        )}
-      </Actions>
+            <Link href="/auth/login">
+              <button style={{
+                padding: '10px 20px',
+                background: 'var(--primary, #3b82f6)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}>
+                ورود / ثبت‌نام
+              </button>
+            </Link>
+          )}
+        </Actions>
+      </HeaderContent>
     </HeaderWrapper>
   );
 }
