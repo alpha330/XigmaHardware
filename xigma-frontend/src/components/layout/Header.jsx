@@ -9,6 +9,10 @@ import { ThemeModeContext } from '../../theme/ThemeRegistry';
 import { useCart } from '../../context/CartContext';
 import Cookies from 'js-cookie';
 
+// Font Awesome
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShoppingCart, faUser, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
+
 // ==================== STYLED COMPONENTS ====================
 const HeaderWrapper = styled.header`
   position: sticky;
@@ -192,14 +196,12 @@ export default function Header() {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Scroll effect
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Auth check (ساده شده)
   useEffect(() => {
     const token = Cookies.get('token');
     setIsLoggedIn(!!token);
@@ -232,7 +234,6 @@ export default function Header() {
   return (
     <HeaderWrapper isScrolled={isScrolled}>
       <HeaderContent>
-        {/* LOGO */}
         <Logo href="/">
           <LogoImage 
             src="/images/logos/xigma-logo.png" 
@@ -242,7 +243,6 @@ export default function Header() {
           <LogoText>XigmaHardware</LogoText>
         </Logo>
 
-        {/* NAVIGATION */}
         <Nav>
           {mainNav.map((item) => 
             item.hasDropdown ? (
@@ -289,23 +289,22 @@ export default function Header() {
           )}
         </Nav>
 
-        {/* ACTIONS */}
         <Actions>
-          {/* Theme Toggle */}
+          {/* Theme Toggle - حالا با Font Awesome */}
           <ThemeToggle onClick={toggleTheme} title={isDarkMode ? 'تم روشن' : 'تم تیره'}>
-            {isDarkMode ? '☀️' : '🌙'}
+            <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
           </ThemeToggle>
 
           {/* Cart */}
           <IconButton as={Link} href="/basket/cart" title="سبد خرید">
-            🛍️
+            <FontAwesomeIcon icon={faShoppingCart} />
             {cartCount > 0 && <CartBadge>{cartCount}</CartBadge>}
           </IconButton>
 
           {/* User */}
           {isLoggedIn ? (
             <IconButton as={Link} href="/accounts/profile" title="حساب کاربری">
-              👤
+              <FontAwesomeIcon icon={faUser} />
             </IconButton>
           ) : (
             <Link href="/auth/login">
