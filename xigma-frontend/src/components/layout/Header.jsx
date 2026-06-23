@@ -2,25 +2,26 @@
 
 import React, { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import styled from '@emotion/styled';
 
 import { ThemeModeContext } from '../../theme/ThemeRegistry';
 import { useCart } from '../../context/CartContext';
 import Cookies from 'js-cookie';
+import { apiFetch } from '../../utils/apiFetch';
 
 // Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShoppingCart, faUser, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
+import { faShoppingCart, faUser, faSun, faMoon, faSignOutAlt, faWallet, faFileInvoiceDollar, faHeadset, faCog } from '@fortawesome/free-solid-svg-icons';
 
 // ==================== STYLED COMPONENTS ====================
 const HeaderWrapper = styled.header`
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: ${({ theme, isScrolled }) =>
-    isScrolled
-      ? (theme.colors?.surface || '#ffffff')
+  background: ${({ theme, isScrolled }) => 
+    isScrolled 
+      ? (theme.colors?.surface || '#ffffff') 
       : (theme.colors?.background || '#ffffff')};
   border-bottom: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -59,8 +60,12 @@ const LogoImage = styled.img`
 const LogoText = styled.span`
   font-size: 22px;
   font-weight: 800;
-  color: ${({ theme }) => theme.colors?.textPrimary || '#111827'};
+  color: ${({ theme, isDarkMode }) => 
+    isDarkMode 
+      ? (theme.colors?.textPrimary || '#f3f4f6') 
+      : (theme.colors?.textPrimary || '#111827')};
   letter-spacing: -0.5px;
+  transition: color 0.3s ease;
 `;
 
 const Nav = styled.nav`
@@ -186,30 +191,158 @@ const ThemeToggle = styled(IconButton)`
   font-size: 20px;
 `;
 
+const UserMenuWrapper = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+const UserDropdown = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  background: ${({ theme }) => theme.colors?.surface || '#fff'};
+  border: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
+  border-radius: 14px;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  padding: 8px 0;
+  z-index: 200;
+  overflow: hidden;
+`;
+
+const UserHeader = styled.div`
+  padding: 12px 16px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const Avatar = styled.img`
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid ${({ theme }) => theme.colors?.primary || '#3b82f6'};
+`;
+
+const AvatarPlaceholder = styled.div`
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors?.primary || '#3b82f6'};
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+`;
+
+const UserInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const UserName = styled.div`
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors?.textPrimary || '#111827'};
+  font-size: 15px;
+`;
+
+const UserEmail = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors?.textMuted || '#6b7280'};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const MenuItem = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  font-size: 14.5px;
+  color: ${({ theme }) => theme.colors?.textSecondary || '#4b5563'};
+  text-decoration: none;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors?.hover || '#f3f4f6'};
+    color: ${({ theme }) => theme.colors?.textPrimary || '#111827'};
+  }
+`;
+
+const LogoutButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  font-size: 14.5px;
+  color: #ef4444;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: #fef2f2;
+  }
+`;
+
 // ==================== HEADER COMPONENT ====================
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isDarkMode, toggleTheme } = useContext(ThemeModeContext);
   const { cart } = useCart();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
 
+  // Scroll effect
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Auth + Profile
   useEffect(() => {
     const token = Cookies.get('token');
     setIsLoggedIn(!!token);
+
+    if (token) {
+      // دریافت اطلاعات کاربر (ساده)
+      apiFetch('/api/v1/accounts/profile/')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data) setUserProfile(data);
+        })
+        .catch(() => {});
+    }
   }, []);
 
   const cartCount = cart?.items?.length || 0;
 
   const isActive = (path) => pathname === path || pathname.startsWith(path + '/');
+
+  const handleLogout = async () => {
+    try {
+      await apiFetch('/api/v1/accounts/logout/', { method: 'POST' });
+    } catch (e) {}
+    Cookies.remove('token');
+    Cookies.remove('refresh');
+    setIsLoggedIn(false);
+    setUserProfile(null);
+    router.push('/');
+  };
 
   const mainNav = [
     { label: 'خانه', href: '/' },
@@ -231,22 +364,40 @@ export default function Header() {
     { id: 3, name: 'Dell', href: '/market?brand=3' },
   ];
 
+  // منوی کاربر بر اساس نقش
+  const getUserMenuItems = () => {
+    const items = [
+      { icon: faUser, label: 'پروفایل', href: '/accounts/profile' },
+      { icon: faWallet, label: 'کیف پول', href: '/accounts/wallet' },
+      { icon: faFileInvoiceDollar, label: 'سفارشات و فاکتورها', href: '/accounts/invoices' },
+      { icon: faHeadset, label: 'تیکت‌های پشتیبانی', href: '/accounts/tickets' },
+    ];
+
+    if (userProfile?.is_superuser || userProfile?.role === 'admin') {
+      items.push({ icon: faCog, label: 'پنل مدیریت', href: '/admin' });
+    }
+
+    return items;
+  };
+
+  const userMenuItems = getUserMenuItems();
+
   return (
     <HeaderWrapper isScrolled={isScrolled}>
       <HeaderContent>
         <Logo href="/">
-          <LogoImage
-            src="/images/logos/logo-header.png"
-            alt="XigmaHardware"
+          <LogoImage 
+            src="/images/logos/xigma-logo.png" 
+            alt="XigmaHardware" 
             onError={(e) => { e.target.src = 'https://via.placeholder.com/42/3b82f6/ffffff?text=XH'; }}
           />
-          <LogoText>XigmaHardware</LogoText>
+          <LogoText isDarkMode={isDarkMode}>XigmaHardware</LogoText>
         </Logo>
 
         <Nav>
-          {mainNav.map((item) =>
+          {mainNav.map((item) => 
             item.hasDropdown ? (
-              <ShopDropdown
+              <ShopDropdown 
                 key={item.label}
                 onMouseEnter={() => setIsShopOpen(true)}
                 onMouseLeave={() => setIsShopOpen(false)}
@@ -278,9 +429,9 @@ export default function Header() {
                 </DropdownContent>
               </ShopDropdown>
             ) : (
-              <NavItem
+              <NavItem 
                 key={item.label}
-                href={item.href}
+                href={item.href} 
                 data-active={isActive(item.href)}
               >
                 {item.label}
@@ -290,22 +441,59 @@ export default function Header() {
         </Nav>
 
         <Actions>
-          {/* Theme Toggle - حالا با Font Awesome */}
           <ThemeToggle onClick={toggleTheme} title={isDarkMode ? 'تم روشن' : 'تم تیره'}>
             <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
           </ThemeToggle>
 
-          {/* Cart */}
           <IconButton as={Link} href="/basket/cart" title="سبد خرید">
             <FontAwesomeIcon icon={faShoppingCart} />
             {cartCount > 0 && <CartBadge>{cartCount}</CartBadge>}
           </IconButton>
 
-          {/* User */}
+          {/* User Menu */}
           {isLoggedIn ? (
-            <IconButton as={Link} href="/accounts/profile" title="حساب کاربری">
-              <FontAwesomeIcon icon={faUser} />
-            </IconButton>
+            <UserMenuWrapper>
+              <IconButton 
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                title="حساب کاربری"
+              >
+                {userProfile?.avatar ? (
+                  <Avatar src={userProfile.avatar} alt="avatar" />
+                ) : (
+                  <FontAwesomeIcon icon={faUser} />
+                )}
+              </IconButton>
+
+              {isUserMenuOpen && (
+                <UserDropdown onMouseLeave={() => setIsUserMenuOpen(false)}>
+                  <UserHeader>
+                    {userProfile?.avatar ? (
+                      <Avatar src={userProfile.avatar} alt="avatar" />
+                    ) : (
+                      <AvatarPlaceholder>
+                        {userProfile?.first_name?.[0] || userProfile?.username?.[0] || 'U'}
+                      </AvatarPlaceholder>
+                    )}
+                    <UserInfo>
+                      <UserName>{userProfile?.first_name || userProfile?.username || 'کاربر'}</UserName>
+                      <UserEmail>{userProfile?.email || userProfile?.phone || ''}</UserEmail>
+                    </UserInfo>
+                  </UserHeader>
+
+                  {userMenuItems.map((item, index) => (
+                    <MenuItem key={index} href={item.href}>
+                      <FontAwesomeIcon icon={item.icon} style={{ width: '18px' }} />
+                      {item.label}
+                    </MenuItem>
+                  ))}
+
+                  <LogoutButton onClick={handleLogout}>
+                    <FontAwesomeIcon icon={faSignOutAlt} style={{ width: '18px' }} />
+                    خروج از حساب
+                  </LogoutButton>
+                </UserDropdown>
+              )}
+            </UserMenuWrapper>
           ) : (
             <Link href="/auth/login">
               <button style={{
