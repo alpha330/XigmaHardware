@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState ,useContext} from 'react';
 import styled from '@emotion/styled';
-import { useThemeMode } from '../../theme/ThemeRegistry'; // اگر کانتکس تم اینجوری ایمپورت می‌شه
+import { ThemeModeContext } from '../../theme/ThemeRegistry';
 
 // ==================== STYLED COMPONENTS ====================
 const Container = styled.div`
@@ -46,15 +46,15 @@ const TabButton = styled.button`
   padding: 14px 28px;
   font-size: 15px;
   font-weight: 600;
-  color: ${({ active, theme }) => 
-    active 
-      ? (theme.colors?.primary || '#3b82f6') 
+  color: ${({ active, theme }) =>
+    active
+      ? (theme.colors?.primary || '#3b82f6')
       : (theme.colors?.textSecondary || '#4b5563')};
   background: none;
   border: none;
-  border-bottom: 3px solid ${({ active, theme }) => 
-    active 
-      ? (theme.colors?.primary || '#3b82f6') 
+  border-bottom: 3px solid ${({ active, theme }) =>
+    active
+      ? (theme.colors?.primary || '#3b82f6')
       : 'transparent'};
   cursor: pointer;
   white-space: nowrap;
@@ -91,7 +91,7 @@ const SectionCard = styled.div`
 // ==================== MAIN COMPONENT ====================
 export default function ProfileClient() {
   const [activeTab, setActiveTab] = useState('personal');
-  const { isDarkMode } = useThemeMode?.() || { isDarkMode: false };
+  const { isDarkMode, toggleTheme } = useContext(ThemeModeContext);
 
   const tabs = [
     { id: 'personal', label: 'اطلاعات شخصی' },
