@@ -27,15 +27,15 @@ const TabButton = styled.button`
   padding: 14px 28px;
   font-size: 15px;
   font-weight: 600;
-  color: ${({ active, theme }) => 
-    active 
-      ? (theme.colors?.primary || '#60a5fa') 
+  color: ${({ active, theme }) =>
+    active
+      ? (theme.colors?.primary || '#60a5fa')
       : (theme.colors?.textSecondary || '#94a3b8')};
   background: none;
   border: none;
-  border-bottom: 3px solid ${({ active, theme }) => 
-    active 
-      ? (theme.colors?.primary || '#60a5fa') 
+  border-bottom: 3px solid ${({ active, theme }) =>
+    active
+      ? (theme.colors?.primary || '#60a5fa')
       : 'transparent'};
   cursor: pointer;
   white-space: nowrap;
@@ -58,6 +58,17 @@ const FormGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
+`;
+const Title = styled.h1`
+  font-size: 2rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors?.textPrimary || '#f1f5f9'};
+  margin-bottom: 0.5rem;
+`;
+
+const Subtitle = styled.p`
+  color: ${({ theme }) => theme.colors?.textMuted || '#94a3b8'};
+  font-size: 1rem;
 `;
 
 const FormGroup = styled.div`
