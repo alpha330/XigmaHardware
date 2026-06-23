@@ -18,9 +18,9 @@ const HeaderWrapper = styled.header`
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: ${({ theme, isScrolled }) => 
-    isScrolled 
-      ? (theme.colors?.surface || '#ffffff') 
+  background: ${({ theme, isScrolled }) =>
+    isScrolled
+      ? (theme.colors?.surface || '#ffffff')
       : (theme.colors?.background || '#ffffff')};
   border-bottom: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -235,18 +235,18 @@ export default function Header() {
     <HeaderWrapper isScrolled={isScrolled}>
       <HeaderContent>
         <Logo href="/">
-          <LogoImage 
-            src="/images/logos/xigma-logo.png" 
-            alt="XigmaHardware" 
+          <LogoImage
+            src="/images/logos/logo-header.png"
+            alt="XigmaHardware"
             onError={(e) => { e.target.src = 'https://via.placeholder.com/42/3b82f6/ffffff?text=XH'; }}
           />
           <LogoText>XigmaHardware</LogoText>
         </Logo>
 
         <Nav>
-          {mainNav.map((item) => 
+          {mainNav.map((item) =>
             item.hasDropdown ? (
-              <ShopDropdown 
+              <ShopDropdown
                 key={item.label}
                 onMouseEnter={() => setIsShopOpen(true)}
                 onMouseLeave={() => setIsShopOpen(false)}
@@ -278,9 +278,9 @@ export default function Header() {
                 </DropdownContent>
               </ShopDropdown>
             ) : (
-              <NavItem 
+              <NavItem
                 key={item.label}
-                href={item.href} 
+                href={item.href}
                 data-active={isActive(item.href)}
               >
                 {item.label}
