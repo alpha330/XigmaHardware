@@ -2,13 +2,17 @@
 import MarketClient from '../../components/market/MarketClient';
 import { apiFetch } from '../../utils/apiFetch';
 
-// این صفحه دارای فیلترهای داینامیک است، نباید کش شود
 export const dynamic = 'force-dynamic';
 
-const normalizeData = (data) => {
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.results)) return data.results;
-  return [];
+const normalizePaginated = (data) => {
+  if (!data) return { results: [], count: 0, next: null, previous: null };
+  if (Array.isArray(data)) return { results: data, count: data.length, next: null, previous: null };
+  return {
+    results: Array.isArray(data.results) ? data.results : [],
+    count: data.count || 0,
+    next: data.next || null,
+    previous: data.previous || null,
+  };
 };
 
 async function getProducts(searchParams) {
@@ -21,44 +25,41 @@ async function getProducts(searchParams) {
     const res = await apiFetch(endpoint, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch products');
     const data = await res.json();
-    return normalizeData(data);
+    return normalizePaginated(data);
   } catch (error) {
     console.error('Products fetch error:', error);
-    return [
-      { id: 1, name: 'سرور HP DL380 G10', market_price: 120000000 },
-      { id: 2, name: 'سویچ سیسکو 2960', market_price: 15000000 },
-      { id: 3, name: 'پردازنده Intel Core i9', market_price: 25000000 },
-      { id: 4, name: 'کارت گرافیک RTX 4090', market_price: 110000000 },
-    ];
+    return {
+      results: [
+        { id: 1, name: 'سرور HP DL380 G10', market_price: 120000000 },
+        { id: 2, name: 'سویچ سیسکو 2960', market_price: 15000000 },
+        { id: 3, name: 'پردازنده Intel Core i9', market_price: 25000000 },
+        { id: 4, name: 'کارت گرافیک RTX 4090', market_price: 110000000 },
+      ],
+      count: 4,
+      next: null,
+      previous: null,
+    };
   }
 }
 
 async function getCategories() {
   try {
-    const res = await apiFetch('/api/v1/stock/categories/', {
-      next: { revalidate: 3600 }
-    });
+    const res = await apiFetch('/api/v1/stock/categories/', { next: { revalidate: 3600 } });
     if (!res.ok) throw new Error('Failed to fetch categories');
     const data = await res.json();
-    return normalizeData(data);
+    return Array.isArray(data) ? data : (data.results || []);
   } catch (error) {
     console.error('Categories fetch error:', error);
-    return [
-      { id: 1, name: 'سرور و تجهیزات دیتاسنتر' },
-      { id: 2, name: 'تجهیزات شبکه و رادیویی' },
-      { id: 3, name: 'قطعات PC و ورک‌استیشن' },
-    ];
+    return [];
   }
 }
 
 async function getBrands() {
   try {
-    const res = await apiFetch('/api/v1/stock/brands/?is_active=true', {
-      next: { revalidate: 3600 }
-    });
+    const res = await apiFetch('/api/v1/stock/brands/?is_active=true', { next: { revalidate: 3600 } });
     if (!res.ok) throw new Error('Failed to fetch brands');
     const data = await res.json();
-    return normalizeData(data);
+    return Array.isArray(data) ? data : (data.results || []);
   } catch (error) {
     console.error('Brands fetch error:', error);
     return [];
@@ -67,18 +68,28 @@ async function getBrands() {
 
 export default async function MarketPage({ searchParams }) {
   const resolvedParams = await searchParams;
+  const currentPage = parseInt(resolvedParams.page) || 1;
 
-  const [products, categories, brands] = await Promise.all([
+  const [productData, categories, brands] = await Promise.all([
     getProducts(resolvedParams),
     getCategories(),
     getBrands()
   ]);
 
+  const totalPages = Math.ceil((productData.count || 0) / 20); // PAGE_SIZE = 20
+
   return (
     <MarketClient
-      products={products}
+      products={productData.results}
       categories={categories}
       brands={brands}
+      pagination={{
+        count: productData.count,
+        currentPage,
+        totalPages,
+        hasPrevious: !!productData.previous,
+        hasNext: !!productData.next,
+      }}
     />
   );
 }
