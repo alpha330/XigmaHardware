@@ -81,7 +81,7 @@ export default function PaymentVerifyClient() {
       setMessage('در حال تایید پرداخت و شارژ کیف پول...');
 
       let paymentLogId = params.payment_log_id || sessionStorage.getItem('last_payment_log_id');
-
+      console.log("PAYMENY ID :",paymentLogId)
       if (paymentLogId) {
         // فقط وضعیت را چک کن (callback را کال نکن)
         // eslint-disable-next-line react-hooks/immutability
@@ -110,10 +110,9 @@ export default function PaymentVerifyClient() {
   const triggerBackendCallback = async (paymentLogId, params) => {
     try {
       // کال کردن callback بک‌اند
-      await apiFetch(`/api/v1/payment/callback/${paymentLogId}/`, { method: 'GET' });
-
+      const callBack = await apiFetch(`/api/v1/payment/callback/${paymentLogId}/`,{method: 'GET',});
+      console.log(callBack)
       // بعد از کال کردن callback، وضعیت را چک می‌کنیم
-      await checkWalletStatus(paymentLogId, params);
     } catch (error) {
       console.error('Callback error:', error);
       setStatus('success');
@@ -126,8 +125,7 @@ export default function PaymentVerifyClient() {
     try {
       const res = await apiFetch(`/api/v1/payment/status/${paymentLogId}/`);
       const result = await res.json();
-
-      if (result.wallet_charged) {
+      if (result.status === "redirected") {
         setStatus('success');
         setMessage('پرداخت با موفقیت انجام شد و کیف پول شارژ گردید.');
         setData({
@@ -135,12 +133,12 @@ export default function PaymentVerifyClient() {
           paymentLogId: paymentLogId,
           amount: params.amount,
         });
+        triggerBackendCallback(paymentLogId,params)
       } else {
         // هنوز شارژ نشده، دوباره چک کن
         setTimeout(() => checkWalletStatus(paymentLogId, params), 2000);
       }
     } catch (error) {
-      console.error(error);
       setStatus('success');
       setMessage('پرداخت در درگاه موفق بود. وضعیت کیف پول را از صفحه والت بررسی کنید.');
     }

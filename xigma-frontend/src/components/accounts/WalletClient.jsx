@@ -269,27 +269,18 @@ export default function WalletClient() {
           callback_url: `${window.location.origin}/payment/verify`
         })
       });
-      console.log('Payment initiation response:',await payRes.json());
+
       const payData = await payRes.json();
-      if (payRes.ok) {
+      if (payData.success) {
         // اگر پاسخ مستقیم به درگاه بود، کاربر را به آنجا هدایت کن
-        console.log("redirect accept")
         sessionStorage.setItem('last_payment_log_id',payData.payment_log_id);
-        window.location.href = payRes.url;
-        showToast('در حال انتقال به درگاه پرداخت...', 'info');
-        // return;
+        window.location.href = payData.payment_url;
+        showToast('در حال انتقال به درگاه پرداخت...', 'success');
+        return;
       }else {
         showToast('درگاه پرداخت باز نشد', 'warning');
+        setChargeLoading(false);
       }
-
-      // if (!payRes.ok) throw new Error(payData.error || 'خطا در اتصال به درگاه.');
-
-
-      // console.log('Payment 2 initiation data:',await payData.json());
-
-      // // هدایت کاربر به بانک
-      // window.location.href = payData.payment_url;
-
     } catch (error) {
       showToast(error.message, 'error');
       setChargeLoading(false);

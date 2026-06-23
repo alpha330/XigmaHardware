@@ -333,7 +333,6 @@ export default function Header() {
     }
 
   }, []);
-  console.log(userData)
   const cartCount = cart?.items?.length || 0;
 
   const isActive = (path) => pathname === path || pathname.startsWith(path + '/');
