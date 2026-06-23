@@ -19,9 +19,9 @@ const HeaderWrapper = styled.header`
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: ${({ theme, isScrolled }) => 
-    isScrolled 
-      ? (theme.colors?.surface || '#ffffff') 
+  background: ${({ theme, isScrolled }) =>
+    isScrolled
+      ? (theme.colors?.surface || '#ffffff')
       : (theme.colors?.background || '#ffffff')};
   border-bottom: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -60,9 +60,9 @@ const LogoImage = styled.img`
 const LogoText = styled.span`
   font-size: 22px;
   font-weight: 800;
-  color: ${({ theme, isDarkMode }) => 
-    isDarkMode 
-      ? (theme.colors?.textPrimary || '#f3f4f6') 
+  color: ${({ theme, isDarkMode }) =>
+    isDarkMode
+      ? (theme.colors?.textPrimary || '#f3f4f6')
       : (theme.colors?.textPrimary || '#111827')};
   letter-spacing: -0.5px;
   transition: color 0.3s ease;
@@ -305,6 +305,7 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [userData, setUserData] = useState(null);
 
   // Scroll effect
   useEffect(() => {
@@ -316,19 +317,23 @@ export default function Header() {
   // Auth + Profile
   useEffect(() => {
     const token = Cookies.get('token');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoggedIn(!!token);
 
     if (token) {
       // دریافت اطلاعات کاربر (ساده)
-      apiFetch('/api/v1/accounts/profile/')
+      apiFetch('/api/v1/accounts/me/')
+
         .then(res => res.ok ? res.json() : null)
         .then(data => {
-          if (data) setUserProfile(data);
+          if (data) setUserProfile(data.profile);
+          if (data) setUserData(data.user);
         })
         .catch(() => {});
     }
-  }, []);
 
+  }, []);
+  console.log(userData)
   const cartCount = cart?.items?.length || 0;
 
   const isActive = (path) => pathname === path || pathname.startsWith(path + '/');
@@ -386,18 +391,18 @@ export default function Header() {
     <HeaderWrapper isScrolled={isScrolled}>
       <HeaderContent>
         <Logo href="/">
-          <LogoImage 
-            src="/images/logos/xigma-logo.png" 
-            alt="XigmaHardware" 
+          <LogoImage
+            src="/images/logos/xigma-logo.png"
+            alt="XigmaHardware"
             onError={(e) => { e.target.src = 'https://via.placeholder.com/42/3b82f6/ffffff?text=XH'; }}
           />
           <LogoText isDarkMode={isDarkMode}>XigmaHardware</LogoText>
         </Logo>
 
         <Nav>
-          {mainNav.map((item) => 
+          {mainNav.map((item) =>
             item.hasDropdown ? (
-              <ShopDropdown 
+              <ShopDropdown
                 key={item.label}
                 onMouseEnter={() => setIsShopOpen(true)}
                 onMouseLeave={() => setIsShopOpen(false)}
@@ -429,9 +434,9 @@ export default function Header() {
                 </DropdownContent>
               </ShopDropdown>
             ) : (
-              <NavItem 
+              <NavItem
                 key={item.label}
-                href={item.href} 
+                href={item.href}
                 data-active={isActive(item.href)}
               >
                 {item.label}
@@ -453,12 +458,12 @@ export default function Header() {
           {/* User Menu */}
           {isLoggedIn ? (
             <UserMenuWrapper>
-              <IconButton 
+              <IconButton
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 title="حساب کاربری"
               >
-                {userProfile?.avatar ? (
-                  <Avatar src={userProfile.avatar} alt="avatar" />
+                {userData?.avatar ? (
+                  <Avatar src={userData.avatar} alt="avatar" />
                 ) : (
                   <FontAwesomeIcon icon={faUser} />
                 )}
@@ -468,15 +473,15 @@ export default function Header() {
                 <UserDropdown onMouseLeave={() => setIsUserMenuOpen(false)}>
                   <UserHeader>
                     {userProfile?.avatar ? (
-                      <Avatar src={userProfile.avatar} alt="avatar" />
+                      <Avatar src={userData.avatar_url} alt="avatar" />
                     ) : (
                       <AvatarPlaceholder>
-                        {userProfile?.first_name?.[0] || userProfile?.username?.[0] || 'U'}
+                        {userData.first_name || userProfile.profile?.username?.[0] || 'U'}
                       </AvatarPlaceholder>
                     )}
                     <UserInfo>
                       <UserName>{userProfile?.first_name || userProfile?.username || 'کاربر'}</UserName>
-                      <UserEmail>{userProfile?.email || userProfile?.phone || ''}</UserEmail>
+                      <UserEmail>{userData?.email || userData?.mobile || ''}</UserEmail>
                     </UserInfo>
                   </UserHeader>
 
