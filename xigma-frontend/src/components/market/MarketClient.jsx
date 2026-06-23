@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useTransition } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import styled from '@emotion/styled';
 import ProductCard from '../shared/ProductCard';
@@ -140,19 +140,29 @@ const PriceSection = styled.div`
   margin-bottom: 24px;
 `;
 
-const PriceInputs = styled.div`
-  display: flex;
+const PriceGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-top: 12px;
+  margin-bottom: 12px;
+`;
+
+const PriceField = styled.div``;
+
+const PriceLabel = styled.div`
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
 `;
 
 const PriceInput = styled.input`
-  flex: 1;
+  width: 100%;
   padding: 10px 12px;
   border: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
   border-radius: 10px;
   font-size: 14px;
   text-align: center;
+  box-sizing: border-box;
 `;
 
 const RangeSliderContainer = styled.div`
@@ -160,7 +170,7 @@ const RangeSliderContainer = styled.div`
   height: 6px;
   background: #e5e7eb;
   border-radius: 999px;
-  margin: 16px 0 8px;
+  margin: 20px 8px 12px;
 `;
 
 const RangeTrack = styled.div`
@@ -168,6 +178,7 @@ const RangeTrack = styled.div`
   height: 6px;
   background: ${({ theme }) => theme.colors?.primary || '#3b82f6'};
   border-radius: 999px;
+  transition: all 0.1s ease;
 `;
 
 const RangeInput = styled.input`
@@ -177,6 +188,7 @@ const RangeInput = styled.input`
   appearance: none;
   height: 6px;
   background: transparent;
+  z-index: 2;
   &::-webkit-slider-thumb {
     pointer-events: all;
     appearance: none;
@@ -184,10 +196,21 @@ const RangeInput = styled.input`
     height: 18px;
     border-radius: 50%;
     background: white;
-    border: 2px solid ${({ theme }) => theme.colors?.primary || '#3b82f6'};
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 3px solid ${({ theme }) => theme.colors?.primary || '#3b82f6'};
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     cursor: pointer;
     margin-top: -6px;
+    z-index: 3;
+  }
+  &::-moz-range-thumb {
+    pointer-events: all;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid ${({ theme }) => theme.colors?.primary || '#3b82f6'};
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    cursor: pointer;
   }
 `;
 
@@ -289,6 +312,8 @@ export default function MarketClient({ products = [], categories = [], brands = 
   const currentSort = searchParams.get('sort') || 'newest';
   const currentInStock = searchParams.get('in_stock') === 'true';
 
+  const MAX_PRICE = 500000000; // 500 میلیون تومان
+
   const updateFilters = (newParams) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -326,7 +351,11 @@ export default function MarketClient({ products = [], categories = [], brands = 
   };
 
   const handlePriceChange = (type, value) => {
-    const num = value === '' ? null : parseInt(value, 10);
+    let num = value === '' ? null : parseInt(value, 10);
+    if (num !== null) {
+      if (type === 'min') num = Math.max(0, Math.min(num, parseInt(currentMaxPrice) || MAX_PRICE));
+      else num = Math.min(MAX_PRICE, Math.max(num, parseInt(currentMinPrice) || 0));
+    }
     if (type === 'min') updateFilters({ min_price: num, page: null });
     else updateFilters({ max_price: num, page: null });
   };
@@ -342,6 +371,12 @@ export default function MarketClient({ products = [], categories = [], brands = 
   const clearAllFilters = () => {
     router.replace('/market', { scroll: false });
   };
+
+  // Calculate slider percentages
+  const minVal = parseInt(currentMinPrice) || 0;
+  const maxVal = parseInt(currentMaxPrice) || MAX_PRICE;
+  const minPercent = Math.min(Math.max((minVal / MAX_PRICE) * 100, 0), 100);
+  const maxPercent = Math.min(Math.max((maxVal / MAX_PRICE) * 100, 0), 100);
 
   // Active filters for chips
   const activeFilters = [];
@@ -431,44 +466,68 @@ export default function MarketClient({ products = [], categories = [], brands = 
           </>
         )}
 
-        {/* Price Range with Slider */}
+        {/* Price Range with improved dual slider */}
         <PriceSection>
           <FilterTitle>بازه قیمت (تومان)</FilterTitle>
-          <PriceInputs>
-            <PriceInput
-              type="number"
-              placeholder="حداقل"
-              value={currentMinPrice}
-              onChange={(e) => handlePriceChange('min', e.target.value)}
-            />
-            <PriceInput
-              type="number"
-              placeholder="حداکثر"
-              value={currentMaxPrice}
-              onChange={(e) => handlePriceChange('max', e.target.value)}
-            />
-          </PriceInputs>
 
-          {/* Simple visual dual range (basic implementation) */}
+          <PriceGrid>
+            <PriceField>
+              <PriceLabel>حداقل</PriceLabel>
+              <PriceInput
+                type="number"
+                placeholder="0"
+                value={currentMinPrice}
+                onChange={(e) => handlePriceChange('min', e.target.value)}
+              />
+            </PriceField>
+            <PriceField>
+              <PriceLabel>حداکثر</PriceLabel>
+              <PriceInput
+                type="number"
+                placeholder="500,000,000"
+                value={currentMaxPrice}
+                onChange={(e) => handlePriceChange('max', e.target.value)}
+              />
+            </PriceField>
+          </PriceGrid>
+
+          {/* Dual Range Slider */}
           <RangeSliderContainer>
-            <RangeTrack style={{ left: '0%', width: '100%' }} />
-            <RangeInput
-              type="range"
-              min="0"
-              max="500000000"
-              step="1000000"
-              value={currentMinPrice || 0}
-              onChange={(e) => handlePriceChange('min', e.target.value)}
+            <RangeTrack
+              style={{
+                left: `${minPercent}%`,
+                width: `${Math.max(maxPercent - minPercent, 0)}%`
+              }}
             />
+            {/* Min thumb */}
             <RangeInput
               type="range"
               min="0"
-              max="500000000"
+              max={MAX_PRICE}
               step="1000000"
-              value={currentMaxPrice || 500000000}
-              onChange={(e) => handlePriceChange('max', e.target.value)}
+              value={minVal}
+              onChange={(e) => {
+                const newMin = Math.min(parseInt(e.target.value), maxVal - 1000000);
+                handlePriceChange('min', newMin);
+              }}
+            />
+            {/* Max thumb */}
+            <RangeInput
+              type="range"
+              min="0"
+              max={MAX_PRICE}
+              step="1000000"
+              value={maxVal}
+              onChange={(e) => {
+                const newMax = Math.max(parseInt(e.target.value), minVal + 1000000);
+                handlePriceChange('max', newMax);
+              }}
             />
           </RangeSliderContainer>
+
+          <div style={{ fontSize: '11px', color: '#9ca3af', textAlign: 'center', marginTop: '4px' }}>
+            از {minVal.toLocaleString('fa-IR')} تا {maxVal.toLocaleString('fa-IR')} تومان
+          </div>
         </PriceSection>
 
         {/* Sort */}
