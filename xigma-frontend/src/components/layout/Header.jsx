@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import styled from '@emotion/styled';
-import { useThemeMode } from '../../context/ThemeModeContext'; // فرض بر این است که کانتекст تم وجود دارد
 
+import { ThemeModeContext } from '../../theme/ThemeRegistry';
 import { useCart } from '../../context/CartContext';
 import Cookies from 'js-cookie';
-import { apiFetch } from '../../utils/apiFetch';
 
 // ==================== STYLED COMPONENTS ====================
 const HeaderWrapper = styled.header`
@@ -183,19 +182,15 @@ const ThemeToggle = styled(IconButton)`
   font-size: 20px;
 `;
 
-const UserSection = styled.div` display: flex; align-items: center; gap: 12px; `;
-
 // ==================== HEADER COMPONENT ====================
 export default function Header() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { isDarkMode, toggleTheme } = useThemeMode();
+  const { isDarkMode, toggleTheme } = useContext(ThemeModeContext);
   const { cart } = useCart();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
 
   // Scroll effect
   useEffect(() => {
@@ -204,14 +199,10 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Auth check
+  // Auth check (ساده شده)
   useEffect(() => {
     const token = Cookies.get('token');
     setIsLoggedIn(!!token);
-    if (token) {
-      // در پروژه واقعی اینجا پروفایل کاربر رو می‌گیریم
-      setUser({ name: 'علی رضایی', avatar: null });
-    }
   }, []);
 
   const cartCount = cart?.items?.length || 0;
@@ -226,19 +217,16 @@ export default function Header() {
     { label: 'پشتیبانی', href: '/support' },
   ];
 
-  // نمونه دسته‌بندی و برند (در آینده از API می‌گیریم)
   const categories = [
     { id: 1, name: 'سرور و تجهیزات دیتاسنتر', href: '/market?category=1' },
     { id: 2, name: 'تجهیزات شبکه', href: '/market?category=2' },
     { id: 3, name: 'قطعات کامپیوتر', href: '/market?category=3' },
-    { id: 4, name: 'ذخیره‌سازی', href: '/market?category=4' },
   ];
 
   const brands = [
     { id: 1, name: 'HP', href: '/market?brand=1' },
     { id: 2, name: 'Cisco', href: '/market?brand=2' },
     { id: 3, name: 'Dell', href: '/market?brand=3' },
-    { id: 4, name: 'Lenovo', href: '/market?brand=4' },
   ];
 
   return (
@@ -310,22 +298,20 @@ export default function Header() {
 
           {/* Cart */}
           <IconButton as={Link} href="/basket/cart" title="سبد خرید">
-            🛒
+            🛍️
             {cartCount > 0 && <CartBadge>{cartCount}</CartBadge>}
           </IconButton>
 
           {/* User */}
-          {isLoggedIn && user ? (
-            <UserSection>
-              <IconButton as={Link} href="/accounts/profile" title="حساب کاربری">
-                👤
-              </IconButton>
-            </UserSection>
+          {isLoggedIn ? (
+            <IconButton as={Link} href="/accounts/profile" title="حساب کاربری">
+              👤
+            </IconButton>
           ) : (
             <Link href="/auth/login">
               <button style={{
                 padding: '10px 20px',
-                background: 'var(--primary, #3b82f6)',
+                background: '#3b82f6',
                 color: 'white',
                 border: 'none',
                 borderRadius: '10px',
