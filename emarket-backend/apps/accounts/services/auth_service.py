@@ -1,6 +1,6 @@
 import logging
 from celery import shared_task
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
@@ -201,15 +201,12 @@ class AuthService:
 
         # احراز هویت با رمز عبور
         if password:
-            # استفاده از authenticate استاندارد
-            if email:
-                auth_user = authenticate(email=email, password=password)
-            else:
-                auth_user = authenticate(mobile=mobile, password=password)
-
-            if auth_user:
+            # The custom user model uses email as USERNAME_FIELD, so Django's
+            # default backend cannot authenticate a mobile credential. The
+            # user has already been resolved by either unique identifier.
+            if user.check_password(password):
                 user.reset_failed_login()
-                return auth_user
+                return user
             else:
                 user.increment_failed_login()
                 return None
@@ -227,9 +224,14 @@ class AuthService:
         user.last_login_ip = cls.get_client_ip(request)
 
         # تشخیص روش ورود
-        if request.data.get('email'):
+        identifier = (
+            request.data.get('identifier')
+            or request.data.get('email')
+            or request.data.get('mobile')
+        )
+        if identifier and '@' in identifier:
             user.last_login_method = 'email'
-        elif request.data.get('mobile'):
+        elif identifier:
             user.last_login_method = 'mobile'
 
         user.save()

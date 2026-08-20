@@ -1,7 +1,7 @@
 // src/components/market/ProductReviews.jsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { apiFetch } from '../../utils/apiFetch';
 import { useToast } from '../ui/ToastProvider';
@@ -179,7 +179,7 @@ export default function ProductReviews({ productId, stats }) {
     overall: 5, value_for_money: 5, quality: 5, performance: 5
   });
 
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/v1/market/reviews/?product=${productId}`);
       if (res.ok) {
@@ -191,12 +191,12 @@ export default function ProductReviews({ productId, stats }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (productId) fetchReviews();
-  }, [productId]);
+  }, [fetchReviews, productId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

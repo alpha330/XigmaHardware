@@ -390,7 +390,7 @@ class DeviceService:
         if x_forwarded_for:
             ip = x_forwarded_for.split(',')[0].strip()
         else:
-            ip = request.META.get('REMOTE_ADDR', '0.0.0.0')
+            ip = request.META.get('REMOTE_ADDR')
         
         return ip
     
@@ -410,7 +410,7 @@ class DeviceService:
         # این یک پیاده‌سازی ساده است
         # در محیط واقعی از django-ipware و django-geoip2 استفاده کنید
         
-        if ip_address in ['127.0.0.1', 'localhost', '0.0.0.0']:
+        if ip_address in ['127.0.0.1', '::1', 'localhost']:
             return {
                 'country': 'Local',
                 'city': 'Development',

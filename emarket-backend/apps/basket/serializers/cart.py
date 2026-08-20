@@ -76,6 +76,32 @@ class CartListSerializer(serializers.ModelSerializer):
             'icon': '🛒' if obj.is_cart else '⭐',
         }
 
+    def get_items(self, obj):
+        items = obj.items.filter(is_active=True).select_related('product')
+        return CartItemSerializer(items, many=True, context=self.context).data
+
+    def get_discount_info(self, obj):
+        if obj.discount_percent > 0 or obj.discount_amount > 0:
+            return {
+                'has_discount': True,
+                'percent': float(obj.discount_percent) if obj.discount_percent > 0 else None,
+                'amount': float(obj.discount_amount) if obj.discount_amount > 0 else None,
+                'type': obj.discount_type,
+                'set_by': obj.discount_set_by.get_display_name() if obj.discount_set_by else None,
+                'note': obj.discount_note,
+                'approved_at': obj.discount_approved_at,
+            }
+        return {'has_discount': False}
+
+    def get_converted_from_info(self, obj):
+        if obj.converted_from:
+            return {
+                'wishlist_id': str(obj.converted_from.id),
+                'wishlist_name': obj.converted_from.name,
+                'converted_at': obj.converted_at,
+            }
+        return None
+
 
 class CartSerializer(serializers.ModelSerializer):
     """سریالایزر کامل سبد خرید"""

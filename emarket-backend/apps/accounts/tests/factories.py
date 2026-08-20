@@ -24,12 +24,21 @@ class UserFactory(factory.django.DjangoModelFactory):
     mobile = factory.Sequence(lambda n: f'09{n:09d}'[:11])
     first_name = factory.Faker('first_name')
     last_name = factory.Faker('last_name')
-    password = factory.PostGenerationMethodCall('set_password', 'TestPass123!')
+    password = 'TestPass123!'
     is_active = True
     is_email_verified = True
     is_mobile_verified = True
     role = UserRole.CLIENT
     registration_method = 'email'
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        raw_password = kwargs.pop('password', None)
+        user = model_class(*args, **kwargs)
+        if raw_password:
+            user.set_password(raw_password)
+        user.save()
+        return user
     
     @factory.lazy_attribute
     def email(self):
@@ -81,6 +90,16 @@ class ProfileFactory(factory.django.DjangoModelFactory):
     address = factory.Faker('address')
     postal_code = factory.Sequence(lambda n: f'{n:010d}'[:10])
     tel = factory.Sequence(lambda n: f'021{n:08d}'[:11])
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        """Update the profile automatically created by the User signal."""
+        user = kwargs.pop('user')
+        profile, _ = model_class.objects.update_or_create(
+            user=user,
+            defaults=kwargs,
+        )
+        return profile
     
     class Params:
         # پروفایل حقوقی
@@ -110,6 +129,16 @@ class WalletFactory(factory.django.DjangoModelFactory):
     user = factory.SubFactory(UserFactory)
     balance = factory.fuzzy.FuzzyDecimal(0, 10000000, 2)
     is_active = True
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        """Update the wallet automatically created by the User signal."""
+        user = kwargs.pop('user')
+        wallet, _ = model_class.objects.update_or_create(
+            user=user,
+            defaults=kwargs,
+        )
+        return wallet
 
 
 class UserDeviceFactory(factory.django.DjangoModelFactory):

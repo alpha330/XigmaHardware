@@ -1,9 +1,10 @@
 // src/components/basket/WishlistClient.jsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '../../utils/apiFetch';
 import { useToast } from '../ui/ToastProvider';
 
@@ -149,30 +150,31 @@ const ActionBtn = styled.button`
 
 export default function WishlistClient() {
   const { showToast } = useToast();
+  const router = useRouter();
   const [wishlists, setWishlists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
 
   const formatPrice = (price) => new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
 
-  const fetchWishlists = async () => {
+  const fetchWishlists = useCallback(async () => {
     try {
       const res = await apiFetch('/api/v1/basket/wishlists/');
       if (res.ok) {
         const data = await res.json();
-        setWishlists(data);
+        setWishlists(data.results || data);
       }
     } catch (error) {
       console.error('Fetch wishlists error:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchWishlists();
-  }, []);
+  }, [fetchWishlists]);
 
   // هندلر تبدیل پیش‌فاکتور به سبد خرید نهایی
   const handleConvertToCart = async (wishlistId) => {
@@ -187,7 +189,7 @@ export default function WishlistClient() {
 
       showToast('پیش‌فاکتور با موفقیت به سبد خرید تبدیل شد.', 'success');
       // هدایت کاربر به سبد خرید پس از ۱.۵ ثانیه
-      setTimeout(() => window.location.href = '/basket/cart', 1500);
+      setTimeout(() => router.push('/basket/cart'), 1500);
 
     } catch (error) {
       showToast(error.message, 'error');

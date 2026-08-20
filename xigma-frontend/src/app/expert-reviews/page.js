@@ -1,5 +1,6 @@
 // src/app/expert-reviews/page.js
 import ExpertReviewsClient from '../../components/website/ExpertReviewsClient';
+import { serverApiUrl } from '../../utils/serverApiUrl';
 
 export const revalidate = 3600;
 
@@ -8,7 +9,7 @@ const normalizeData = (data) => Array.isArray(data) ? data : (data?.results || [
 async function getExpertReviews() {
   try {
     // فرض می‌کنیم در بک‌اند مقالات بررسی تخصصی با یک کوئری خاص جدا می‌شوند
-    const res = await fetch('http://localhost:8000/api/v1/website/articles/?category=expert-review', {
+    const res = await fetch(serverApiUrl('/api/v1/website/articles/?category=expert-review'), {
       next: { revalidate: 3600 }
     });
     if (!res.ok) throw new Error();

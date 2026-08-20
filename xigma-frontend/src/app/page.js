@@ -1,5 +1,6 @@
 // src/app/page.js
 import HomeClient from '../components/home/HomeClient';
+import { serverApiUrl } from '../utils/serverApiUrl';
 
 export const revalidate = 60;
 
@@ -12,7 +13,7 @@ const normalizeData = (data) => {
 
 async function getFeaturedProducts() {
   try {
-    const res = await fetch('http://localhost:8000/api/v1/market/products/featured/', { next: { revalidate: 60 } });
+    const res = await fetch(serverApiUrl('/api/v1/market/products/featured/'), { next: { revalidate: 60 } });
     if (!res.ok) throw new Error();
     const data = await res.json();
     return normalizeData(data);
@@ -26,7 +27,7 @@ async function getFeaturedProducts() {
 
 async function getBestsellers() {
   try {
-    const res = await fetch('http://localhost:8000/api/v1/market/products/bestsellers/', { next: { revalidate: 60 } });
+    const res = await fetch(serverApiUrl('/api/v1/market/products/bestsellers/'), { next: { revalidate: 60 } });
     if (!res.ok) throw new Error();
     const data = await res.json();
     return normalizeData(data);
@@ -40,7 +41,7 @@ async function getBestsellers() {
 
 async function getArticles() {
   try {
-    const res = await fetch('http://localhost:8000/api/v1/website/articles/featured/', { next: { revalidate: 60 } });
+    const res = await fetch(serverApiUrl('/api/v1/website/articles/featured/'), { next: { revalidate: 60 } });
     if (!res.ok) throw new Error();
     const data = await res.json();
     return normalizeData(data);
@@ -53,7 +54,7 @@ async function getArticles() {
 
 async function getReviews() {
   try {
-    const res = await fetch('http://localhost:8000/api/v1/market/reviews/', { next: { revalidate: 60 } });
+    const res = await fetch(serverApiUrl('/api/v1/market/reviews/'), { next: { revalidate: 60 } });
     if (!res.ok) throw new Error();
     const data = await res.json();
     return normalizeData(data);

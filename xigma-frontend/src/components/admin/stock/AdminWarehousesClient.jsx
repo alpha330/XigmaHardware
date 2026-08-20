@@ -178,7 +178,7 @@ export default function AdminWarehousesClient() {
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState(defaultFormState);
 
-  const fetchWarehouses = async () => {
+  const fetchWarehouses = useCallback(async () => {
     setLoading(true);
     try {
       const res = await apiFetch('/api/v1/stock/warehouses/', { cache: 'no-store' });
@@ -191,9 +191,9 @@ export default function AdminWarehousesClient() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const res = await apiFetch('/api/v1/accounts/users/');
       if (res.ok) {
@@ -203,13 +203,13 @@ export default function AdminWarehousesClient() {
     } catch (error) {
       console.error("Failed to fetch users list");
     }
-  };
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchWarehouses();
     fetchUsers();
-  }, []);
+  }, [fetchUsers, fetchWarehouses]);
 
   const handleOpenCreateModal = () => {
     setEditId(null);

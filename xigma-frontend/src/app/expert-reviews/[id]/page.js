@@ -1,9 +1,10 @@
 // src/app/expert-reviews/[id]/page.js
 import ExpertReviewDetailClient from '../../../components/website/ExpertReviewDetailClient';
+import { serverApiUrl } from '../../../utils/serverApiUrl';
 
 async function getExpertReviewDetail(id) {
   try {
-    const res = await fetch(`http://localhost:8000/api/v1/website/articles/${id}/`, { cache: 'no-store' });
+    const res = await fetch(serverApiUrl(`/api/v1/website/articles/${id}/`), { cache: 'no-store' });
     if (!res.ok) throw new Error();
     return await res.json();
   } catch (error) {

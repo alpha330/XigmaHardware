@@ -279,9 +279,7 @@ export default function CheckoutClient() {
 
   const getAddressFromCoords = async (lat, lng) => {
     try {
-      const res = await fetch(`https://api.neshan.org/v5/reverse?lat=${lat}&lng=${lng}`, {
-        headers: { 'Api-Key':'service.7a95737616be44d98464a6eb06308184' }
-      });
+      const res = await fetch(`/internal/geocode/reverse?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`);
       const data = await res.json();
       if (data.formatted_address) setBillingInfo(prev => ({ ...prev, billing_address: data.formatted_address }));
     } catch { showToast('خطا در دریافت آدرس', 'error'); }
@@ -295,7 +293,7 @@ export default function CheckoutClient() {
           apiFetch('/api/v1/basket/carts/my_cart/'),
           apiFetch('/api/v1/accounts/me/profile/'),
           apiFetch('/api/v1/accounts/me/'),
-          apiFetch('/api/v1/payment/gateways/active_gateways/')
+          apiFetch('/api/v1/payment/active-gateways/')
         ]);
 
         if (!cartRes.ok) return router.push('/basket/cart');
@@ -438,7 +436,7 @@ export default function CheckoutClient() {
 
       if (selectedGateway === 'wallet') {
         showToast('پرداخت با کیف پول انجام شد.', 'success');
-        router.push(`/profile/invoices/${invoiceId}`);
+        router.push(`/accounts/invoices/${invoiceId}`);
       } else {
         sessionStorage.setItem('last_payment_log_id', payData.payment_log_id);
         window.location.href = payData.payment_url;

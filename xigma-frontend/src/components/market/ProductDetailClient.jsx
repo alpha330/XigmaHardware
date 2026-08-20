@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
+import Image from 'next/image';
 import { apiFetch } from '../../utils/apiFetch';
 import { useToast } from '../ui/ToastProvider';
 import ProductReviews from './ProductReviews';
@@ -326,7 +327,7 @@ export default function ProductDetailClient({ identifier }) {
         <GalleryArea>
           <MainImage>
             {selectedImage ? (
-              <img src={selectedImage} alt={product.title} />
+              <Image unoptimized src={selectedImage} alt={product.title} width={800} height={800} priority />
             ) : (
               <span style={{ fontSize: '4rem', opacity: 0.2 }}>📷</span>
             )}
@@ -340,7 +341,7 @@ export default function ProductDetailClient({ identifier }) {
                   active={selectedImage === med.image}
                   onClick={() => setSelectedImage(med.image)}
                 >
-                  <img src={med.image} alt="thumbnail" />
+                  <Image unoptimized src={med.image} alt={`نمای ${idx + 1} از ${product.title}`} width={80} height={80} />
                 </Thumbnail>
               ))}
             </ThumbnailsList>

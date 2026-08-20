@@ -58,10 +58,7 @@ def user(db):
     user.set_password('TestPass123!')
     user.save()
     
-    # ساخت پروفایل و کیف پول
-    baker.make('accounts.Profile', user=user)
-    baker.make('accounts.Wallet', user=user)
-    
+    # Profile and wallet are created by the User post_save signals.
     return user
 
 
@@ -86,10 +83,10 @@ def admin_user(db):
     admin.set_password('AdminPass123!')
     admin.save()
     
-    # ساخت پروفایل و کیف پول
-    baker.make('accounts.Profile', user=admin)
-    baker.make('accounts.Wallet', user=admin, balance=9999999)
-    
+    # Profile and wallet are created by signals; only customize the balance.
+    admin.wallet.balance = 9999999
+    admin.wallet.save(update_fields=['balance'])
+
     return admin
 
 
@@ -111,9 +108,6 @@ def users_batch(db):
         )
         user.set_password('TestPass123!')
         user.save()
-        
-        baker.make('accounts.Profile', user=user)
-        baker.make('accounts.Wallet', user=user)
         
         users.append(user)
     

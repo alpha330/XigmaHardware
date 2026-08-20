@@ -1,15 +1,15 @@
 import Cookies from 'js-cookie';
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { apiUrl } from './apiUrl';
+import { clearAuthTokens, storeAuthTokens } from './authCookies';
 
 let refreshTokenPromise = null;
 
 const forceLogout = () => {
-  Cookies.remove('token', { path: '/' });
-  Cookies.remove('refresh', { path: '/' });
+  clearAuthTokens();
   if (typeof window !== 'undefined') {
     // جلوگیری از ریدایرکت‌های تکراری
     if (window.location.pathname !== '/auth/login') {
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- navigation hooks are unavailable in this shared utility
       window.location.href = '/auth/login';
     }
   }
@@ -28,7 +28,7 @@ export const apiFetch = async (endpoint, options = {}) => {
     return headers;
   };
 
-  const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
+  const url = apiUrl(endpoint);
 
   // درخواست اولیه
   let response = await fetch(url, { ...options, headers: setHeaders(getAccessToken()) });
@@ -44,7 +44,7 @@ export const apiFetch = async (endpoint, options = {}) => {
 
     // استفاده از Promise مشترک برای جلوگیری از رفرش‌های تکراری
     if (!refreshTokenPromise) {
-      refreshTokenPromise = fetch(`${BASE_URL}/api/v1/accounts/auth/token/refresh/`, {
+      refreshTokenPromise = fetch(apiUrl('/api/v1/accounts/auth/token/refresh/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh }),
@@ -52,8 +52,10 @@ export const apiFetch = async (endpoint, options = {}) => {
       .then(async (res) => {
         if (!res.ok) throw new Error('Refresh failed');
         const data = await res.json();
-        Cookies.set('token', data.access, { expires: 1 / 24, path: '/' });
-        if (data.refresh) Cookies.set('refresh', data.refresh, { expires: 7, path: '/' });
+        storeAuthTokens({
+          access: data.access,
+          refresh: data.refresh || refresh,
+        });
         return data.access;
       })
       .catch((err) => {

@@ -14,7 +14,6 @@ pytest-sugar==1.0.0
 pytest-html==4.1.1
 pytest-timeout==2.3.1
 pytest-mock==3.14.0
-pytest-freezegun==0.4.2
 
 # -------------------- Test Data --------------------
 factory-boy==3.3.0
@@ -45,6 +44,6 @@ bandit==1.7.8
 # -------------------- Linting --------------------
 black==24.4.2
 isort==5.13.2
-flake8==7.0.0
+flake8==7.3.0
 mypy==1.10.0
 ruff==0.4.4

@@ -68,8 +68,11 @@ class PaymentService:
                 from django.conf import settings
                 site_url = getattr(settings, 'SITE_URL', 'http://localhost:8000')
                 callback_url = f"{site_url}/api/v1/payment/callback/{payment_log.id}/"
-                print(f"🚨 [CALLBACK_URL] Final URL sent to gateway: {callback_url}")
-                print(f"🚨 [CALLBACK_URL] PaymentLog ID: {payment_log.id}")
+                logger.info(
+                    'Generated payment callback URL for payment_log=%s: %s',
+                    payment_log.id,
+                    callback_url,
+                )
 
             result = gateway.create_payment(
                 amount=amount,

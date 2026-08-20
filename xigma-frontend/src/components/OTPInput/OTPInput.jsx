@@ -35,6 +35,11 @@ export default function OTPInput({ length = 6, onComplete, resendOTP }) {
   const [otp, setOtp] = useState(new Array(length).fill(""));
   const [timer, setTimer] = useState(120);
   const inputRefs = useRef([]);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   // فوکوس روی اینپوت اول در شروع
   useEffect(() => {
@@ -87,8 +92,8 @@ export default function OTPInput({ length = 6, onComplete, resendOTP }) {
 
   useEffect(() => {
     const code = otp.join("");
-    if (code.length === length) onComplete(code);
-  }, [otp]);
+    if (code.length === length) onCompleteRef.current(code);
+  }, [otp, length]);
 
   return (
     <div>

@@ -1,0 +1,11 @@
+services:
+  backend_test:
+    build:
+      context: ./emarket-backend
+      dockerfile: Dockerfile.dev
+    entrypoint: []
+    command: ["pytest", "--no-cov", "-q"]
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+    volumes:
+      - ./emarket-backend:/app

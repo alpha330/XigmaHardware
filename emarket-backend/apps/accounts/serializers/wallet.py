@@ -5,6 +5,8 @@ Wallet Serializers
 - واریز/برداشت
 """
 
+from decimal import Decimal
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from apps.accounts.models import Wallet, WalletTransaction
@@ -114,7 +116,7 @@ class WalletDepositSerializer(serializers.Serializer):
     amount = serializers.DecimalField(
         max_digits=15,
         decimal_places=2,
-        min_value=1000,  # حداقل 1000 تومان
+        min_value=Decimal('1000'),  # حداقل 1000 تومان
         error_messages={
             'required': _('Amount is required.'),
             'min_value': _('Minimum deposit amount is 1,000 Rials.'),
@@ -158,7 +160,7 @@ class WalletWithdrawSerializer(serializers.Serializer):
     amount = serializers.DecimalField(
         max_digits=15,
         decimal_places=2,
-        min_value=1000,  # حداقل 1000 تومان
+        min_value=Decimal('1000'),  # حداقل 1000 تومان
         error_messages={
             'required': _('Amount is required.'),
             'min_value': _('Minimum withdrawal amount is 1,000 Rials.'),

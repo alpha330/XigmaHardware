@@ -1,7 +1,7 @@
 // src/components/support/LiveChatWidget.jsx
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { apiFetch } from '../../utils/apiFetch';
 
@@ -171,7 +171,7 @@ export default function LiveChatWidget() {
   }, [messages]);
 
   // دریافت اطلاعات سشن فعال و پیام‌ها
-  const fetchSession = async (sessionId) => {
+  const fetchSession = useCallback(async (sessionId) => {
     try {
       const res = await apiFetch(`/api/v1/support/chats/${sessionId}/`);
       if (res.ok) {
@@ -184,7 +184,7 @@ export default function LiveChatWidget() {
     } catch (error) {
       console.error('Failed to fetch chat session');
     }
-  };
+  }, []);
 
   // چک کردن اینکه آیا از قبل چت فعالی داریم یا نه
   useEffect(() => {
@@ -209,7 +209,7 @@ export default function LiveChatWidget() {
     if (isOpen && !session) {
       checkActiveChats();
     }
-  }, [isOpen]);
+  }, [fetchSession, isOpen, session]);
 
   // راه‌اندازی Polling برای دریافت پیام‌های جدید
   useEffect(() => {
@@ -222,7 +222,7 @@ export default function LiveChatWidget() {
     }
 
     return () => clearInterval(pollingInterval.current);
-  }, [isOpen, session]);
+  }, [fetchSession, isOpen, session]);
 
   const handleStartChat = async (e) => {
     e.preventDefault();

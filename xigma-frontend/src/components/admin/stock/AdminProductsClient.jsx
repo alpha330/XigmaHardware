@@ -1,8 +1,9 @@
 // src/components/admin/stock/AdminProductsClient.jsx
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from '@emotion/styled';
+import Image from 'next/image';
 import { apiFetch } from '../../../utils/apiFetch';
 import { useToast } from '../../ui/ToastProvider';
 import { useRouter } from 'next/navigation';
@@ -161,6 +162,25 @@ export default function AdminProductsClient() {
   const [isMainImage, setIsMainImage] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  const fetchInitialData = useCallback(async () => {
+    try {
+      const [catsRes, brandsRes] = await Promise.all([
+        apiFetch('/api/v1/stock/categories/'),
+        apiFetch('/api/v1/stock/brands/')
+      ]);
+      if (catsRes.ok) {
+        const data = await catsRes.json();
+        setCategories(data.results || data);
+      }
+      if (brandsRes.ok) {
+        const data = await brandsRes.json();
+        setBrands(data.results || data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch base data');
+    }
+  }, []);
+
   // 1. Check Access
   useEffect(() => {
     const checkAccess = async () => {
@@ -173,7 +193,6 @@ export default function AdminProductsClient() {
 
           if (user.is_superuser || allowedRoles.includes(user.role)) {
             setIsAuthorized(true);
-            // eslint-disable-next-line react-hooks/immutability
             fetchInitialData();
           } else {
             showToast('شما دسترسی لازم برای مشاهده این پنل را ندارید.', 'error');
@@ -187,30 +206,17 @@ export default function AdminProductsClient() {
       }
     };
     checkAccess();
-  }, [router, showToast]);
-
-  // 2. Fetch Initial Base Data
-  const fetchInitialData = async () => {
-    try {
-      const [catsRes, brandsRes] = await Promise.all([
-        apiFetch('/api/v1/stock/categories/'),
-        apiFetch('/api/v1/stock/brands/')
-      ]);
-      if (catsRes.ok) setCategories((await catsRes.json()).results || await catsRes.json());
-      if (brandsRes.ok) setBrands((await brandsRes.json()).results || await brandsRes.json());
-    } catch (error) {
-      console.error('Failed to fetch base data');
-    }
-  };
+  }, [fetchInitialData, router, showToast]);
 
   // 3. Fetch Products
-  const fetchProducts = async (query = '') => {
+  const fetchProducts = useCallback(async (query = '') => {
     setLoading(true);
     try {
       const url = query ? `/api/v1/stock/products/?search=${query}` : '/api/v1/stock/products/';
       const res = await apiFetch(url, { cache: 'no-store' });
       if (res.ok) {
-        setProducts((await res.json()).results || await res.json());
+        const data = await res.json();
+        setProducts(data.results || data);
       } else {
         throw new Error('خطا در دریافت لیست محصولات');
       }
@@ -219,13 +225,13 @@ export default function AdminProductsClient() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     if (!isAuthorized) return;
     const timer = setTimeout(() => { fetchProducts(search); }, 500);
     return () => clearTimeout(timer);
-  }, [search, isAuthorized]);
+  }, [fetchProducts, search, isAuthorized]);
 
   if (!isAuthorized) {
     return <div style={{ textAlign: 'center', padding: '5rem', fontSize: '1.2rem' }}>در حال بررسی دسترسی امنیتی... 🔒</div>;
@@ -444,7 +450,7 @@ export default function AdminProductsClient() {
                 <tr key={product.id}>
                   <td>
                     {product.images && product.images.length > 0 ? (
-                      <img src={product.images[0].image} alt={product.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
+                      <Image unoptimized src={product.images[0].image} alt={product.name} width={40} height={40} style={{ borderRadius: '8px', objectFit: 'cover' }} />
                     ) : ( <span style={{ fontSize: '1.5rem' }}>📦</span> )}
                   </td>
                   <td style={{ fontWeight: 'bold' }}>{product.name}</td>
@@ -490,7 +496,7 @@ export default function AdminProductsClient() {
                 {imageModalObj.images.map(img => (
                   <div key={img.id} className={`img-wrapper ${img.is_main ? 'main-img' : ''}`}>
                     {img.is_main && <span className="main-badge">اصلی</span>}
-                    <img src={img.image} alt="تصویر کالا" />
+                    <Image unoptimized src={img.image} alt="تصویر کالا" width={100} height={100} />
                   </div>
                 ))}
               </ImageGallery>

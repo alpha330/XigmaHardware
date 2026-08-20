@@ -1,5 +1,5 @@
 // src/app/accounts/invoices/[id]/page.js
-import InvoiceDetailClient from '../../../../../components/accounts/InvoiceDetailClient';
+import InvoiceDetailClient from '../../../../components/accounts/InvoiceDetailClient';
 
 export const metadata = {
   title: 'جزئیات فاکتور | XigmaHardware',

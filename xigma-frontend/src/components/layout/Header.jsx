@@ -8,6 +8,7 @@ import styled from '@emotion/styled';
 import { ThemeModeContext } from '../../theme/ThemeRegistry';
 import { useCart } from '../../context/CartContext';
 import Cookies from 'js-cookie';
+import { clearAuthTokens } from '../../utils/authCookies';
 import { apiFetch } from '../../utils/apiFetch';
 
 // Font Awesome
@@ -339,10 +340,9 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      await apiFetch('/api/v1/accounts/logout/', { method: 'POST' });
+      await apiFetch('/api/v1/accounts/auth/logout/', { method: 'POST' });
     } catch (e) {}
-    Cookies.remove('token');
-    Cookies.remove('refresh');
+    clearAuthTokens();
     setIsLoggedIn(false);
     setUserProfile(null);
     router.push('/');
