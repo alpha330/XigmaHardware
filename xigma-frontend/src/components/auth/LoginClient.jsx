@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Cookies from 'js-cookie';
+import { storeAuthTokens } from '../../utils/authCookies';
 import {
   AuthContainer, AuthCard, AuthTitle, AuthSubtitle, InputGroup,
   Label, Input, SubmitButton, BottomLink, Tabs, Tab
@@ -94,8 +94,7 @@ export default function LoginClient() {
   };
 
   const saveTokens = (tokens) => {
-    Cookies.set('token', tokens.access, { expires: 1 / 24, path: '/' });
-    Cookies.set('refresh', tokens.refresh, { expires: 7, path: '/' });
+    storeAuthTokens(tokens);
     showToast('خوش آمدید!', 'success');
     setTimeout(() => router.push('/accounts/profile'), 1000);
   };

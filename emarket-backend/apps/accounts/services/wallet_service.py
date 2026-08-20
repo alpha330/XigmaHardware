@@ -61,7 +61,7 @@ class WalletService:
             status=WalletTransactionStatus.COMPLETED,
             balance_before=wallet.balance,
             description=description,
-            reference_id=str(reference_id) if reference_id else None,
+            reference_id=str(reference_id) if reference_id else '',
             metadata=metadata or {},
             completed_at=timezone.now()
         )

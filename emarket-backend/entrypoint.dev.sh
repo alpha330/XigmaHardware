@@ -1,31 +1,22 @@
-#!/bin/bash
-set -e
+#!/bin/sh
+set -eu
 
-echo "========================================="
-echo "🚀 Marketplace Backend - DEVELOPMENT"
-echo "========================================="
-echo ""
+wait_for_service() {
+    host="$1"
+    port="$2"
+    service="$3"
 
-# # Wait for PostgreSQL
-# echo "⏳ Waiting for PostgreSQL..."
-# while ! nc -z ${DB_HOST:-postgres} ${DB_PORT:-5432}; do sleep 0.5; done
-# echo "✅ PostgreSQL is ready!"
+    echo "Waiting for ${service} at ${host}:${port}..."
+    until nc -z "$host" "$port"; do
+        sleep 1
+    done
+}
 
-# Wait for Redis
-# echo "⏳ Waiting for Redis..."
-# while ! nc -z ${REDIS_HOST:-redis} ${REDIS_PORT:-6379}; do sleep 0.5; done
-# echo "✅ Redis is ready!"
+wait_for_service "${DB_HOST:-postgres}" "${DB_PORT:-5432}" "PostgreSQL"
+wait_for_service "${REDIS_HOST:-redis}" "${REDIS_PORT:-6379}" "Redis"
 
-# Wait for MailHog
-echo "⏳ Waiting for MailHog..."
-while ! nc -z ${EMAIL_HOST:-mailhog} ${EMAIL_SMTP_PORT:-1025}; do sleep 0.5; done
-echo "✅ MailHog is ready!"
+if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+    python manage.py migrate --noinput
+fi
 
-echo ""
-echo "📦 Running migrations..."
-python manage.py makemigrations
-python manage.py migrate
-
-echo ""
-echo "🔥 Starting Django development server..."
-exec python manage.py runserver 0.0.0.0:8000
+exec "$@"

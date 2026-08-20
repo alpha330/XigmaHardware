@@ -16,7 +16,7 @@ class TestRegistration:
     
     def test_register_with_email(self, api_client, user_data):
         """تست ثبت‌نام موفق با ایمیل"""
-        url = reverse('accounts:email-register')
+        url = reverse('api:accounts:email-register')
         response = api_client.post(url, user_data, format='json')
         
         assert response.status_code == status.HTTP_201_CREATED
@@ -27,7 +27,7 @@ class TestRegistration:
     
     def test_register_with_existing_email(self, api_client, user, user_data):
         """تست ثبت‌نام با ایمیل تکراری"""
-        url = reverse('accounts:email-register')
+        url = reverse('api:accounts:email-register')
         user_data['email'] = user.email
         response = api_client.post(url, user_data, format='json')
         
@@ -35,7 +35,7 @@ class TestRegistration:
     
     def test_register_with_mobile(self, api_client):
         """تست ثبت‌نام با موبایل"""
-        url = reverse('accounts:mobile-register')
+        url = reverse('api:accounts:mobile-register')
         data = {
             'mobile': '09123456789',
             'password': 'TestPass123!',
@@ -47,7 +47,7 @@ class TestRegistration:
     
     def test_register_with_invalid_mobile(self, api_client):
         """تست ثبت‌نام با موبایل نامعتبر"""
-        url = reverse('accounts:mobile-register')
+        url = reverse('api:accounts:mobile-register')
         data = {
             'mobile': '12345',
             'password': 'TestPass123!',
@@ -58,7 +58,7 @@ class TestRegistration:
     
     def test_register_password_mismatch(self, api_client):
         """تست عدم تطابق رمز عبور"""
-        url = reverse('accounts:email-register')
+        url = reverse('api:accounts:email-register')
         data = {
             'email': 'test@example.com',
             'password': 'TestPass123!',
@@ -77,9 +77,9 @@ class TestLogin:
     
     def test_login_with_email(self, api_client, user, test_password):
         """تست ورود موفق با ایمیل"""
-        url = reverse('accounts:login')
+        url = reverse('api:accounts:login')
         data = {
-            'email': user.email,
+            'identifier': user.email,
             'password': test_password,
         }
         response = api_client.post(url, data, format='json')
@@ -94,9 +94,9 @@ class TestLogin:
         user.set_password(test_password)
         user.save()
         
-        url = reverse('accounts:login')
+        url = reverse('api:accounts:login')
         data = {
-            'mobile': '09123456789',
+            'identifier': '09123456789',
             'password': test_password,
         }
         response = api_client.post(url, data, format='json')
@@ -105,9 +105,9 @@ class TestLogin:
     
     def test_login_invalid_credentials(self, api_client, user):
         """تست ورود با اطلاعات نادرست"""
-        url = reverse('accounts:login')
+        url = reverse('api:accounts:login')
         data = {
-            'email': user.email,
+            'identifier': user.email,
             'password': 'WrongPassword123!',
         }
         response = api_client.post(url, data, format='json')
@@ -117,9 +117,9 @@ class TestLogin:
     def test_login_inactive_user(self, api_client, test_password):
         """تست ورود کاربر غیرفعال"""
         user = UserFactory(inactive=True)
-        url = reverse('accounts:login')
+        url = reverse('api:accounts:login')
         data = {
-            'email': user.email,
+            'identifier': user.email,
             'password': test_password,
         }
         response = api_client.post(url, data, format='json')
@@ -135,7 +135,7 @@ class TestLogout:
     
     def test_logout(self, authenticated_client):
         """تست خروج موفق"""
-        url = reverse('accounts:logout')
+        url = reverse('api:accounts:logout')
         # باید refresh token رو بفرستی
         response = authenticated_client.post(url, {}, format='json')
         
@@ -151,7 +151,7 @@ class TestPasswordChange:
     
     def test_change_password(self, authenticated_client, test_password):
         """تست تغییر رمز عبور موفق"""
-        url = reverse('accounts:change-password')
+        url = reverse('api:accounts:change-password')
         data = {
             'old_password': test_password,
             'new_password': 'NewTestPass456!',
@@ -163,7 +163,7 @@ class TestPasswordChange:
     
     def test_change_password_wrong_old(self, authenticated_client):
         """تست تغییر رمز با رمز فعلی اشتباه"""
-        url = reverse('accounts:change-password')
+        url = reverse('api:accounts:change-password')
         data = {
             'old_password': 'WrongPass123!',
             'new_password': 'NewTestPass456!',

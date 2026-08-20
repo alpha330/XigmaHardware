@@ -1,12 +1,13 @@
 // src/app/about/page.js
 import AboutClient from '../../components/website/AboutClient';
+import { serverApiUrl } from '../../utils/serverApiUrl';
 
 // کش کردن صفحه درباره ما (چون محتوای آن به ندرت تغییر می‌کند)
 export const revalidate = 3600; // هر یک ساعت یک‌بار آپدیت شود
 
 async function getAboutPageData() {
   try {
-    const res = await fetch('http://localhost:8000/api/v1/website/pages/about/', {
+    const res = await fetch(serverApiUrl('/api/v1/website/pages/about/'), {
       next: { revalidate: 3600 }
     });
 

@@ -164,7 +164,7 @@ export default function SupportClient() {
 
       <QuickActionsGrid>
         {/* ۱. بررسی گارانتی */}
-        <ActionCard>
+        <ActionCard id="warranty">
           <span className="icon">🛡️</span>
           <h3>استعلام گارانتی</h3>
           <p>شماره سریال کالا را وارد کنید تا از وضعیت گارانتی و اعتبار آن مطلع شوید.</p>
@@ -211,7 +211,7 @@ export default function SupportClient() {
       </QuickActionsGrid>
 
       {/* بخش سوالات متداول */}
-      <FAQHeader>پاسخ پرسش‌های پر تکرار</FAQHeader>
+      <FAQHeader id="faq">پاسخ پرسش‌های پر تکرار</FAQHeader>
       <FAQList>
         {faqs.map(faq => (
           <FAQItem key={faq.id} isOpen={openFaqId === faq.id}>

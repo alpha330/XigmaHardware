@@ -20,6 +20,10 @@ CORS_ALLOWED_ORIGINS = [
 
 
 # Django Debug Toolbar
-INSTALLED_APPS += ['debug_toolbar']
-MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+INSTALLED_APPS += ['debug_toolbar', 'silk', 'django_browser_reload']
+MIDDLEWARE += [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'silk.middleware.SilkyMiddleware',
+    'django_browser_reload.middleware.BrowserReloadMiddleware',
+]
 INTERNAL_IPS = ['127.0.0.1']

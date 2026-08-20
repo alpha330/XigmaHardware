@@ -18,8 +18,8 @@ app.conf.accept_content = ['json']
 app.conf.timezone = 'Asia/Tehran'
 app.conf.enable_utc = False
 
-# ✅ مسیر task ها
-app.autodiscover_tasks(['apps.accounts'])
+# Discover tasks.py in every installed Django application.
+app.autodiscover_tasks()
 
 # ✅ اضافه کن: task رو حتماً acknowledge کنه
 app.conf.task_acks_late = True
@@ -27,10 +27,6 @@ app.conf.task_reject_on_worker_lost = True
 
 # beat schedule
 app.conf.beat_schedule = {
-    'clean-expired-otps': {
-        'task': 'accounts.clean_expired_otps',
-        'schedule': crontab(minute=0, hour='*/1'),
-    },
     'clean-expired-otps': {
         'task': 'accounts.clean_expired_otps',
         'schedule': crontab(minute=0, hour='*/1'),  # هر یک ساعت

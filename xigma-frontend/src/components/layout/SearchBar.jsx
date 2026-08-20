@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { apiUrl } from '../../utils/apiUrl';
 
 const SearchContainer = styled.div`
   position: relative;
@@ -142,7 +143,7 @@ export default function SearchBar() {
       setIsOpen(true);
       try {
         // اندپوینت سرچ (با استفاده از query string)
-        const res = await fetch(`http://localhost:8000/api/v1/market/products/?search=${encodeURIComponent(query)}`);
+        const res = await fetch(apiUrl(`/api/v1/market/products/?search=${encodeURIComponent(query)}`));
         const data = await res.json();
 
         // استخراج آرایه (با توجه به صفحه‌بندی احتمالی)

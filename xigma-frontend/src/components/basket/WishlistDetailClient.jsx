@@ -1,9 +1,11 @@
 // src/components/basket/WishlistDetailClient.jsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '../../utils/apiFetch';
 import { useToast } from '../ui/ToastProvider';
 
@@ -191,6 +193,7 @@ const ActionButton = styled.button`
 
 export default function WishlistDetailClient({ wishlistId }) {
   const { showToast } = useToast();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
@@ -198,7 +201,7 @@ export default function WishlistDetailClient({ wishlistId }) {
   const formatPrice = (price) => new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
 
   // دریافت اطلاعات کامل پیش‌فاکتور
-  const fetchWishlistDetail = async () => {
+  const fetchWishlistDetail = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/v1/basket/wishlists/${wishlistId}/`);
       if (res.ok) {
@@ -212,12 +215,12 @@ export default function WishlistDetailClient({ wishlistId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast, wishlistId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (wishlistId) fetchWishlistDetail();
-  }, [wishlistId]);
+  }, [fetchWishlistDetail, wishlistId]);
 
   // تغییر تعداد آیتم درون پیش‌فاکتور
   const handleUpdateQuantity = async (itemId, currentQty, change, maxAvailable) => {
@@ -268,7 +271,7 @@ export default function WishlistDetailClient({ wishlistId }) {
       if (!res.ok) throw new Error(data.error || 'خطا در تبدیل پیش‌فاکتور.');
 
       showToast('با موفقیت به سبد خرید فعال تبدیل شد.', 'success');
-      setTimeout(() => window.location.href = '/basket/cart', 1200);
+      setTimeout(() => router.push('/basket/cart'), 1200);
     } catch (error) {
       showToast(error.message, 'error');
       setActionLoading(null);
@@ -305,11 +308,11 @@ export default function WishlistDetailClient({ wishlistId }) {
             items.map(item => (
               <ItemRow key={item.id}>
                 <ItemImage>
-                  {item.product_image ? <img src={item.product_image} alt={item.product_name} /> : '📷'}
+                  {item.product_image ? <Image unoptimized src={item.product_image} alt={item.product_name} width={90} height={90} /> : '📷'}
                 </ItemImage>
 
                 <ItemDetails>
-                  <ItemTitle href={`/market/product/${item.product}`}>{item.product_name}</ItemTitle>
+                  <ItemTitle href={`/market/products/${item.product}`}>{item.product_name}</ItemTitle>
                   <ItemSku>کد کالا (SKU): {item.product_sku}</ItemSku>
 
                   <ControlsRow>

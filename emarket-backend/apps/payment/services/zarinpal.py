@@ -1,8 +1,11 @@
+import logging
+
 import requests
-from django.utils.translation import gettext_lazy as _
+
 from .base import BaseGateway
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+logger = logging.getLogger(__name__)
 
 class ZarinPalGateway(BaseGateway):
     name = "ZarinPal"
@@ -31,7 +34,8 @@ class ZarinPalGateway(BaseGateway):
             }
         }
         try:
-            resp = requests.post(url, json=payload, timeout=30, verify=False)
+            resp = requests.post(url, json=payload, timeout=30)
+            resp.raise_for_status()
             data = resp.json()
 
             if data.get('data', {}).get('code') == 100:
@@ -45,8 +49,9 @@ class ZarinPalGateway(BaseGateway):
                 }
             else:
                 return {'success': False, 'error': f"Error code: {data.get('errors')}"}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
+        except (requests.RequestException, ValueError) as exc:
+            logger.exception('ZarinPal payment request failed')
+            return {'success': False, 'error': str(exc)}
 
     def verify_payment(self, gateway_code, amount, **kwargs):
         url = f"{self.base_url}verify.json"
@@ -55,18 +60,17 @@ class ZarinPalGateway(BaseGateway):
             "amount": int(amount),
             "authority": gateway_code
         }
-        print(f"[ZarinPal] Verifying - Authority: {gateway_code}, Amount: {amount}")
+        logger.info(
+            'Verifying ZarinPal payment authority=%s amount=%s',
+            gateway_code,
+            amount,
+        )
 
         try:
-            resp = requests.post(url, json=payload, timeout=30, verify=False)
-
-            # چک کردن وضعیت HTTP
-            if resp.status_code != 200:
-                print(f"[ZarinPal] HTTP Error: {resp.status_code} - {resp.text[:200]}")
-                return {'success': False, 'error': f'HTTP Error {resp.status_code}'}
-
+            resp = requests.post(url, json=payload, timeout=30)
+            resp.raise_for_status()
             data = resp.json()
-            print(f"[ZarinPal] Verify Response: {data}")
+            logger.debug('ZarinPal verification response: %s', data)
 
             code = data.get('data', {}).get('code')
             if code == 100:
@@ -88,9 +92,9 @@ class ZarinPalGateway(BaseGateway):
                     'error': f"Verification failed with code: {code}",
                     'data': data.get('errors')
                 }
-        except Exception as e:
-            print(f"[ZarinPal] Verify Exception: {str(e)}")
-            return {'success': False, 'error': str(e)}
+        except (requests.RequestException, ValueError) as exc:
+            logger.exception('ZarinPal payment verification failed')
+            return {'success': False, 'error': str(exc)}
 
     def get_payment_info(self, gateway_code):
         return {'success': False, 'error': 'Not supported'}

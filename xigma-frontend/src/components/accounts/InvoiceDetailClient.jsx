@@ -223,7 +223,7 @@ export default function InvoiceDetailClient({ invoiceId }) {
           setInvoice(data);
 
           if (data.status === 'pending' || data.status === 'partially_paid') {
-            const gwRes = await apiFetch('/api/v1/payment/active_gateways/');
+            const gwRes = await apiFetch('/api/v1/payment/active-gateways/');
             if (gwRes.ok) {
               const gwData = await gwRes.json();
               const allGateways = [
@@ -253,7 +253,7 @@ export default function InvoiceDetailClient({ invoiceId }) {
 
     try {
       if (selectedGateway === 'wallet') {
-        const payRes = await apiFetch('/api/v1/payment/pay_with_wallet/', {
+        const payRes = await apiFetch('/api/v1/payment/pay/wallet/', {
           method: 'POST',
           body: JSON.stringify({ amount: invoice.remaining_amount, invoice_id: invoice.id })
         });

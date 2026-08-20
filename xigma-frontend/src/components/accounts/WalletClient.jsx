@@ -190,7 +190,7 @@ export default function WalletClient() {
         const [walletRes, txRes, gwRes] = await Promise.all([
           apiFetch('/api/v1/accounts/wallets/my_wallet/'),
           apiFetch('/api/v1/accounts/wallets/my_transactions/'),
-          apiFetch('/api/v1/payment/gateways/active_gateways/')
+          apiFetch('/api/v1/payment/active-gateways/')
         ]);
         const wbalacneGeneral = await walletRes.json()
         if (walletRes.ok) setWallet(wbalacneGeneral.balance);

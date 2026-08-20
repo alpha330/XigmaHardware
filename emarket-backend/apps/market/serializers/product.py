@@ -160,6 +160,11 @@ class MarketProductSerializer(serializers.ModelSerializer):
     def get_comments_count(self, obj):
         return obj.comments.filter(status='active').count()
 
+    def get_rating_summary(self, obj):
+        from apps.market.services.rating_service import RatingService
+
+        return RatingService.get_rating_summary(obj)
+
     def _get_rating_distribution(self, obj):
         """توزیع امتیازات (چندتا ۵ ستاره، ۴ ستاره و...)"""
         from django.db.models import Count

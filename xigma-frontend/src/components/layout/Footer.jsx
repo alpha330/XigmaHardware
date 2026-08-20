@@ -69,9 +69,9 @@ export default function Footer() {
 
         <FooterCol>
           <Title>پشتیبانی</Title>
-          <FooterLink href="/support/faq">سوالات متداول</FooterLink>
-          <FooterLink href="/support/tickets">تیکت پشتیبانی</FooterLink>
-          <FooterLink href="/support/warranties">استعلام گارانتی</FooterLink>
+          <FooterLink href="/support#faq">سوالات متداول</FooterLink>
+          <FooterLink href="/accounts/tickets">تیکت پشتیبانی</FooterLink>
+          <FooterLink href="/support#warranty">استعلام گارانتی</FooterLink>
         </FooterCol>
       </FooterGrid>
 

@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
+import Image from 'next/image';
 import { apiFetch } from '../../utils/apiFetch';
 import { useToast } from '../ui/ToastProvider';
 import { useCart } from '@/context/CartContext';
@@ -293,7 +294,7 @@ export default function CartClient() {
           {cart.items.map(item => (
             <CartItemRow key={item.id}>
               <ItemImage>
-                {item.product_image ? <img src={item.product_image} alt={item.product_name} /> : '📦'}
+                {item.product_image ? <Image unoptimized src={item.product_image} alt={item.product_name} width={100} height={100} /> : '📦'}
               </ItemImage>
 
               <ItemDetails>

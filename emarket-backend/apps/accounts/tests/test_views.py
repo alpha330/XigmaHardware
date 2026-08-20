@@ -16,7 +16,7 @@ class TestUserViewSet:
     
     def test_get_me(self, authenticated_client, user):
         """تست دریافت پروفایل خود"""
-        url = reverse('accounts:user-me')
+        url = reverse('api:accounts:user-me')
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -24,7 +24,7 @@ class TestUserViewSet:
     
     def test_update_me(self, authenticated_client, user):
         """تست به‌روزرسانی پروفایل خود"""
-        url = reverse('accounts:user-me')
+        url = reverse('api:accounts:user-me')
         data = {
             'first_name': 'Updated',
             'last_name': 'Name',
@@ -40,14 +40,14 @@ class TestUserViewSet:
     
     def test_get_me_unauthenticated(self, api_client):
         """تست دسترسی بدون احراز هویت"""
-        url = reverse('accounts:user-me')
+        url = reverse('api:accounts:user-me')
         response = api_client.get(url)
         
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
     
     def test_admin_list_users(self, admin_client, users_batch):
         """تست لیست کاربران توسط ادمین"""
-        url = reverse('accounts:admin-users-list')
+        url = reverse('api:accounts:admin-users-list')
         response = admin_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -55,14 +55,14 @@ class TestUserViewSet:
     
     def test_non_admin_list_users(self, authenticated_client):
         """تست دسترسی غیرمجاز به لیست کاربران"""
-        url = reverse('accounts:admin-users-list')
+        url = reverse('api:accounts:admin-users-list')
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_403_FORBIDDEN
     
     def test_admin_change_role(self, admin_client, user):
         """تست تغییر نقش کاربر توسط ادمین"""
-        url = reverse('accounts:admin-change-role', kwargs={'pk': user.id})
+        url = reverse('api:accounts:admin-change-role', kwargs={'pk': user.id})
         data = {'role': 'accountant'}
         response = admin_client.post(url, data, format='json')
         
@@ -80,7 +80,7 @@ class TestProfileViewSet:
     
     def test_get_my_profile(self, authenticated_client, user):
         """تست دریافت پروفایل خود"""
-        url = reverse('accounts:my-profile')
+        url = reverse('api:accounts:my-profile')
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -88,7 +88,7 @@ class TestProfileViewSet:
     
     def test_update_my_profile(self, authenticated_client, user):
         """تست به‌روزرسانی پروفایل"""
-        url = reverse('accounts:my-profile')
+        url = reverse('api:accounts:my-profile')
         data = {
             'address': 'New Test Address',
             'postal_code': '1234567890',
@@ -102,10 +102,10 @@ class TestProfileViewSet:
     
     def test_switch_to_legal(self, authenticated_client, user):
         """تست تغییر پروفایل به حقوقی"""
-        url = reverse('accounts:switch-to-legal')
+        url = reverse('api:accounts:switch-to-legal')
         data = {
             'company_name': 'Test Company LLC',
-            'national_id': '12345678901',
+            'national_id': '12345678900',
             'economic_code': '123456789012',
         }
         response = authenticated_client.post(url, data, format='json')
@@ -118,7 +118,7 @@ class TestProfileViewSet:
     
     def test_check_completion(self, authenticated_client, user):
         """تست بررسی تکمیل پروفایل"""
-        url = reverse('accounts:check-profile-completion')
+        url = reverse('api:accounts:check-profile-completion')
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -134,7 +134,7 @@ class TestWalletViewSet:
     
     def test_get_my_wallet(self, authenticated_client, user):
         """تست دریافت کیف پول خود"""
-        url = reverse('accounts:my-wallet')
+        url = reverse('api:accounts:my-wallet')
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -145,7 +145,7 @@ class TestWalletViewSet:
         """تست واریز به کیف پول"""
         initial_balance = user.wallet.balance
         
-        url = reverse('accounts:wallet-deposit')
+        url = reverse('api:accounts:wallet-deposit')
         data = {
             'amount': 50000,
             'description': 'Test deposit',
@@ -162,7 +162,7 @@ class TestWalletViewSet:
         user.wallet.balance = 100000
         user.wallet.save()
         
-        url = reverse('accounts:wallet-withdraw')
+        url = reverse('api:accounts:wallet-withdraw')
         data = {
             'amount': 30000,
             'description': 'Test withdrawal',
@@ -179,7 +179,7 @@ class TestWalletViewSet:
         user.wallet.balance = 10000
         user.wallet.save()
         
-        url = reverse('accounts:wallet-withdraw')
+        url = reverse('api:accounts:wallet-withdraw')
         data = {
             'amount': 50000,
         }
@@ -189,7 +189,7 @@ class TestWalletViewSet:
     
     def test_get_my_transactions(self, authenticated_client, user):
         """تست دریافت تراکنش‌ها"""
-        url = reverse('accounts:my-transactions')
+        url = reverse('api:accounts:my-transactions')
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK
@@ -203,7 +203,7 @@ class TestDeviceViewSet:
     
     def test_get_my_devices(self, authenticated_client, user):
         """تست دریافت دستگاه‌ها"""
-        url = reverse('accounts:my-devices')
+        url = reverse('api:accounts:my-devices')
         response = authenticated_client.get(url)
         
         assert response.status_code == status.HTTP_200_OK

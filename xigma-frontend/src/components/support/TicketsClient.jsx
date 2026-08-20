@@ -1,7 +1,7 @@
 // src/components/support/TicketsClient.jsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
 import { apiFetch } from '../../utils/apiFetch';
@@ -193,7 +193,7 @@ export default function TicketsClient() {
     subject: '', category: 'other', priority: 'medium', body: ''
   });
 
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     try {
       const res = await apiFetch('/api/v1/support/tickets/my_tickets/');
       if (res.ok) {
@@ -205,12 +205,12 @@ export default function TicketsClient() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTickets();
-  }, [showToast]);
+  }, [fetchTickets]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -1,5 +1,6 @@
 // src/app/support/page.js
 import SupportClient from '../../components/support/SupportClient';
+import { serverApiUrl } from '../../utils/serverApiUrl';
 
 export const revalidate = 3600; // کش کردن صفحه برای یک ساعت
 
@@ -11,7 +12,7 @@ const normalizeData = (data) => {
 
 async function getFaqs() {
   try {
-    const res = await fetch('http://localhost:8000/api/v1/support/faqs/', {
+    const res = await fetch(serverApiUrl('/api/v1/support/faqs/'), {
       next: { revalidate: 3600 }
     });
     if (!res.ok) throw new Error();

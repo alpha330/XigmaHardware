@@ -1,7 +1,7 @@
 // src/components/support/TicketDetailClient.jsx
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from '@emotion/styled';
 import Link from 'next/link';
 import { apiFetch } from '../../utils/apiFetch';
@@ -219,7 +219,7 @@ export default function TicketDetailClient({ ticketId }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const fetchTicket = async () => {
+  const fetchTicket = useCallback(async () => {
     try {
       const res = await apiFetch(`/api/v1/support/tickets/${ticketId}/`);
       if (res.ok) {
@@ -233,12 +233,12 @@ export default function TicketDetailClient({ ticketId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast, ticketId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (ticketId) fetchTicket();
-  }, [ticketId]);
+  }, [fetchTicket, ticketId]);
 
   useEffect(() => {
     if (!loading) scrollToBottom();

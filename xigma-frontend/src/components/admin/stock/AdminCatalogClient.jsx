@@ -1,7 +1,7 @@
 // src/components/admin/stock/AdminCatalogClient.jsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { apiFetch } from '../../../utils/apiFetch';
 import { useToast } from '../../ui/ToastProvider';
@@ -109,6 +109,18 @@ export default function AdminCatalogClient() {
   const [catForm, setCatForm] = useState(defaultCatForm);
   const [submitting, setSubmitting] = useState(false);
 
+  const fetchCategories = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch('/api/v1/stock/categories/', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data.results || data);
+      }
+    } catch (err) { showToast('خطا در دریافت دسته‌بندی‌ها', 'error'); }
+    finally { setLoading(false); }
+  }, [showToast]);
+
   // Security Check
   useEffect(() => {
     const checkAccess = async () => {
@@ -118,7 +130,6 @@ export default function AdminCatalogClient() {
           const data = await res.json();
           const user = data.user || data;
           if (user.is_superuser || user.role === 'stock_keeper') {
-            // eslint-disable-next-line react-hooks/immutability
             fetchCategories();
           } else {
             router.push('/');
@@ -127,16 +138,7 @@ export default function AdminCatalogClient() {
       } catch (err) { router.push('/auth/login'); }
     };
     checkAccess();
-  }, [router]);
-
-  const fetchCategories = async () => {
-    setLoading(true);
-    try {
-      const res = await apiFetch('/api/v1/stock/categories/', { cache: 'no-store' });
-      if (res.ok) setCategories((await res.json()).results || await res.json());
-    } catch (err) { showToast('خطا در دریافت دسته‌بندی‌ها', 'error'); }
-    finally { setLoading(false); }
-  };
+  }, [fetchCategories, router]);
 
   const handleOpenCatModal = (cat = null) => {
     if (cat) {

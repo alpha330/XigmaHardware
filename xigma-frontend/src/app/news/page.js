@@ -1,5 +1,6 @@
 // src/app/news/page.js
 import NewsClient from '../../components/website/NewsClient';
+import { serverApiUrl } from '../../utils/serverApiUrl';
 
 // کش کردن صفحه برای یک ساعت (چون اخبار و مقالات ثانیه‌ای تغییر نمی‌کنند)
 export const revalidate = 3600;
@@ -13,7 +14,7 @@ const normalizeData = (data) => {
 
 async function getArticles() {
   try {
-    const res = await fetch('http://localhost:8000/api/v1/website/articles/', {
+    const res = await fetch(serverApiUrl('/api/v1/website/articles/'), {
       next: { revalidate: 3600 }
     });
     if (!res.ok) throw new Error('Failed to fetch articles');
@@ -31,7 +32,7 @@ async function getArticles() {
 
 async function getNews() {
   try {
-    const res = await fetch('http://localhost:8000/api/v1/website/news/', {
+    const res = await fetch(serverApiUrl('/api/v1/website/news/'), {
       next: { revalidate: 3600 }
     });
     if (!res.ok) throw new Error('Failed to fetch news');

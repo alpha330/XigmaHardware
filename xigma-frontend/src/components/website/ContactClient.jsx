@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import { keyframes } from '@emotion/react';
+import { apiUrl } from '../../utils/apiUrl';
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -196,7 +197,7 @@ export default function ContactClient() {
     setStatus({ loading: true, type: null, message: '' });
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/website/contact/', {
+      const res = await fetch(apiUrl('/api/v1/website/contact/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
