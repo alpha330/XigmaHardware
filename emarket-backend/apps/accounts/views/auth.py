@@ -17,7 +17,11 @@ from apps.accounts.serializers.auth import (
 )
 from apps.accounts.serializers.user import UserSerializer
 from apps.accounts.services.auth_service import AuthService
-from apps.accounts.tasks import send_verification_email, send_otp_sms
+from apps.accounts.tasks import (
+    send_password_reset_email,
+    send_verification_email,
+    send_otp_sms,
+)
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -491,33 +495,29 @@ class PasswordResetRequestView(views.APIView):
             user = AuthService.find_user_by_email_or_mobile(email_or_mobile)
 
             if user:
-                # ارسال OTP یا ایمیل بازیابی
-                if user.mobile:
-                    from apps.accounts.models import OTPCode
-                    otp = OTPCode.generate(
-                        user=user,
-                        purpose='reset_password',
-                        sent_via='sms'
-                    )
-                    send_otp_sms.delay(user.mobile, otp.code)  # ✅ اصلاح شد
+                from apps.accounts.models import OTPCode
 
-                    return Response({
-                        'message': _('Password reset code sent to your mobile.'),
-                        'otp_id': str(otp.id),
-                        'reset_method': 'otp'
-                    })
+                delivery_channel = 'email' if '@' in email_or_mobile else 'sms'
+                otp = OTPCode.generate(
+                    user=user,
+                    purpose='reset_password',
+                    sent_via=delivery_channel,
+                )
 
-                elif user.email:
-                    from apps.accounts.tasks import send_password_reset_email
-                    send_password_reset_email.delay(str(user.id))
+                if delivery_channel == 'email':
+                    send_password_reset_email.delay(str(user.id), otp.code)
+                else:
+                    send_otp_sms.delay(user.mobile, otp.code)
 
-                    return Response({
-                        'message': _('Password reset link sent to your email.'),
-                        'reset_method': 'email'
-                    })
+                return Response({
+                    'message': _('Password reset code sent.'),
+                    'otp_id': str(otp.id),
+                    'reset_method': 'otp',
+                    'delivery_channel': delivery_channel,
+                })
 
             return Response({
-                'message': _('If the account exists, a reset code/link will be sent.')
+                'message': _('If the account exists, a reset code will be sent.')
             })
 
         except Exception as e:
@@ -531,8 +531,6 @@ class PasswordResetConfirmView(views.APIView):
     """
     تایید و انجام بازیابی رمز عبور
     """
-    permission_classes = [permissions.AllowAny]
-
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -550,27 +548,23 @@ class PasswordResetConfirmView(views.APIView):
                     'error': _('Invalid request.')
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # تایید OTP
-            otp_id = serializer.validated_data.get('otp_id')
-            code = serializer.validated_data.get('code')
+            # تغییر رمز فقط بعد از تایید اجباری OTP مجاز است.
+            from apps.accounts.models import OTPCode
+            try:
+                otp = OTPCode.objects.get(
+                    id=serializer.validated_data['otp_id'],
+                    user=user,
+                    purpose='reset_password',
+                )
+            except OTPCode.DoesNotExist:
+                return Response({
+                    'error': _('Invalid OTP reference.')
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-            if otp_id and code:
-                from apps.accounts.models import OTPCode
-                try:
-                    otp = OTPCode.objects.get(
-                        id=otp_id,
-                        user=user,
-                        purpose='reset_password'
-                    )
-                except OTPCode.DoesNotExist:
-                    return Response({
-                        'error': _('Invalid OTP reference.')
-                    }, status=status.HTTP_400_BAD_REQUEST)
-
-                if not otp.verify(code):
-                    return Response({
-                        'error': _('Invalid or expired OTP.')
-                    }, status=status.HTTP_400_BAD_REQUEST)
+            if not otp.verify(serializer.validated_data['code']):
+                return Response({
+                    'error': _('Invalid or expired OTP.')
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             # ✅ اول set_password بعد save
             user.set_password(serializer.validated_data['new_password'])

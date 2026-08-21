@@ -264,6 +264,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     _('Invalid email address.')
                 )
+            value = value.lower()
         else:
             # موبایل
             validate_iranian_phone(value)
@@ -288,12 +289,21 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         write_only=True,
     )
     otp_id = serializers.UUIDField(
-        required=False,
+        required=True,
     )
-    code = serializers.CharField(
-        required=False,
+    code = serializers.RegexField(
+        regex=r'^\d{6}$',
+        required=True,
+        min_length=6,
         max_length=6,
+        error_messages={
+            'invalid': _('OTP code must contain exactly 6 digits.'),
+        },
     )
+
+    def validate_email_or_mobile(self, value):
+        value = value.strip()
+        return value.lower() if '@' in value else value
 
     def validate(self, data):
         """بررسی تطابق رمزها"""

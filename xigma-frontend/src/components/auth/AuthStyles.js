@@ -9,23 +9,62 @@ const fadeIn = keyframes`
 `;
 
 export const AuthContainer = styled.div`
-  min-height: calc(100vh - 80px); /* منهای ارتفاع هدر */
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100dvh - 80px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  background: radial-gradient(circle at center, ${({ theme }) => theme.colors.surface} 0%, ${({ theme }) => theme.colors.background} 100%);
+  overflow: hidden;
+  padding: clamp(1.25rem, 4vw, 3.5rem) 1rem;
+  background:
+    radial-gradient(circle at 15% 15%, ${({ theme }) => `${theme.colors.primary}24`} 0, transparent 34%),
+    radial-gradient(circle at 85% 82%, ${({ theme }) => `${theme.colors.primary}16`} 0, transparent 30%),
+    ${({ theme }) => theme.colors.background};
+
+  &::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    content: '';
+    opacity: ${({ theme }) => theme.mode === 'dark' ? 0.22 : 0.32};
+    background-image:
+      linear-gradient(${({ theme }) => `${theme.colors.border}55`} 1px, transparent 1px),
+      linear-gradient(90deg, ${({ theme }) => `${theme.colors.border}55`} 1px, transparent 1px);
+    background-size: 38px 38px;
+    mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+  }
 `;
 
 export const AuthCard = styled.div`
-  background-color: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 20px;
-  padding: 3rem;
+  position: relative;
+  background: linear-gradient(
+    145deg,
+    ${({ theme }) => theme.colors.surfaceElevated},
+    ${({ theme }) => theme.colors.surface}
+  );
+  border: 1px solid ${({ theme }) => theme.colors.borderStrong};
+  border-radius: 24px;
+  padding: clamp(1.5rem, 4vw, 3rem);
   width: 100%;
-  max-width: 450px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  max-width: 520px;
+  box-shadow: ${({ theme }) => theme.mode === 'dark'
+    ? '0 24px 70px rgba(0, 0, 0, 0.42)'
+    : '0 24px 70px rgba(15, 23, 42, 0.13)'};
   animation: ${fadeIn} 0.5s ease-out;
+  color: ${({ theme }) => theme.colors.textMain};
+
+  &::before {
+    position: absolute;
+    inset: 0 auto auto 12%;
+    width: 76%;
+    height: 2px;
+    border-radius: 999px;
+    content: '';
+    background: linear-gradient(90deg, transparent, ${({ theme }) => theme.colors.primary}, transparent);
+    opacity: 0.7;
+  }
 `;
 
 export const AuthTitle = styled.h1`
@@ -41,6 +80,18 @@ export const AuthSubtitle = styled.p`
   text-align: center;
   margin-bottom: 2rem;
   font-size: 0.95rem;
+  line-height: 1.9;
+`;
+
+export const AuthGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 `;
 
 export const InputGroup = styled.div`
@@ -53,49 +104,158 @@ export const InputGroup = styled.div`
 export const Label = styled.label`
   color: ${({ theme }) => theme.colors.textMain};
   font-size: 0.9rem;
-  font-weight: bold;
+  font-weight: 700;
+`;
+
+export const LabelRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 `;
 
 export const Input = styled.input`
-  width: 100%; /* این خط مشکل بیرون‌زدگی را حل می‌کند */
-  box-sizing: border-box; /* اطمینان از محاسبه درست پدینگ‌ها */
-  background-color: ${({ theme }) => theme.colors.background};
+  width: 100%;
+  box-sizing: border-box;
+  background-color: ${({ theme }) => theme.colors.inputBackground};
   border: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.textMain};
+  min-height: 48px;
   padding: 0.8rem 1rem;
-  border-radius: 8px;
+  border-radius: 12px;
   font-family: inherit;
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   direction: ${({ dir }) => dir || 'rtl'};
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+  }
 
   &:focus {
     border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 3px ${({ theme }) => `${theme.colors.primary}33`};
+    box-shadow: 0 0 0 4px ${({ theme }) => theme.colors.focusRing};
+  }
+
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus {
+    -webkit-text-fill-color: ${({ theme }) => theme.colors.textMain};
+    -webkit-box-shadow: 0 0 0 1000px ${({ theme }) => theme.colors.inputBackground} inset;
+    caret-color: ${({ theme }) => theme.colors.primary};
   }
 `;
 
 export const SubmitButton = styled.button`
   width: 100%;
   background-color: ${({ theme }) => theme.colors.primary};
-  color: #fff;
-  border: none;
+  color: ${({ theme }) => theme.colors.onPrimary};
+  border: 1px solid ${({ theme }) => theme.colors.primary};
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 1rem;
-  font-weight: bold;
+  font-weight: 800;
   cursor: pointer;
   margin-top: 1rem;
-  transition: all 0.2s ease;
+  box-shadow: 0 10px 24px ${({ theme }) => `${theme.colors.primary}2E`};
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: ${({ theme }) => theme.colors.secondary};
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px ${({ theme }) => `${theme.colors.primary}3D`};
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
   }
 
   &:disabled {
-    background-color: ${({ theme }) => theme.colors.border};
+    color: ${({ theme }) => theme.colors.textMuted};
+    background-color: ${({ theme }) => theme.colors.hover};
+    border-color: ${({ theme }) => theme.colors.border};
+    box-shadow: none;
     cursor: not-allowed;
   }
+`;
+
+export const SecondaryButton = styled.button`
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  color: ${({ theme }) => theme.colors.textMain};
+  background: ${({ theme }) => theme.colors.inputBackground};
+  cursor: pointer;
+  font-weight: 700;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary};
+    background: ${({ theme }) => theme.colors.hover};
+  }
+`;
+
+export const AuthInlineLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 0.82rem;
+  font-weight: 700;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.secondary};
+    text-decoration: underline;
+  }
+`;
+
+export const AuthActionLink = styled(Link)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid ${({ theme }) => theme.colors.primary};
+  border-radius: 12px;
+  color: ${({ theme }) => theme.colors.onPrimary};
+  background: ${({ theme }) => theme.colors.primary};
+  box-shadow: 0 10px 24px ${({ theme }) => `${theme.colors.primary}2E`};
+  font-weight: 800;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.secondary};
+    transform: translateY(-1px);
+  }
+
+  &[data-variant='secondary'] {
+    color: ${({ theme }) => theme.colors.textMain};
+    border-color: ${({ theme }) => theme.colors.border};
+    background: ${({ theme }) => theme.colors.inputBackground};
+    box-shadow: none;
+
+    &:hover {
+      border-color: ${({ theme }) => theme.colors.primary};
+      background: ${({ theme }) => theme.colors.hover};
+    }
+  }
+`;
+
+export const StatusIcon = styled.div`
+  margin: 2rem 0;
+  color: ${({ 'data-status': status, theme }) => {
+    if (status === 'success') return theme.colors.success;
+    if (status === 'error') return theme.colors.error;
+    return theme.colors.primary;
+  }};
+  font-size: 3rem;
+  line-height: 1;
+  text-align: center;
 `;
 
 export const BottomLink = styled.div`
@@ -128,18 +288,35 @@ export const AlertMessage = styled.div`
 export const Tabs = styled.div`
   display: flex;
   margin-bottom: 2rem;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 0.3rem;
+  gap: 0.3rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 14px;
+  background: ${({ theme }) => theme.colors.inputBackground};
 `;
 
 export const Tab = styled.button`
   flex: 1;
-  background: none;
-  border: none;
-  padding: 0.8rem;
+  min-height: 42px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0.65rem 0.5rem;
   font-family: inherit;
-  font-weight: bold;
+  font-size: 0.88rem;
+  font-weight: 800;
   cursor: pointer;
-  color: ${({ active, theme }) => active ? theme.colors.primary : theme.colors.textMuted};
-  border-bottom: 2px solid ${({ active, theme }) => active ? theme.colors.primary : 'transparent'};
-  transition: all 0.2s ease;
+  color: ${({ theme }) => theme.colors.textMuted};
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.textMain};
+    background: ${({ theme }) => theme.colors.hover};
+  }
+
+  &[aria-pressed='true'] {
+    color: ${({ theme }) => theme.colors.primary};
+    border-color: ${({ theme }) => `${theme.colors.primary}4D`};
+    background: ${({ theme }) => theme.colors.primaryLight};
+  }
 `;

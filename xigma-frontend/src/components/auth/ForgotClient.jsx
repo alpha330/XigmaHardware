@@ -5,8 +5,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AuthContainer, AuthCard, AuthTitle, AuthSubtitle,
-  InputGroup, Label, Input, SubmitButton, BottomLink
-} from './AuthStyles'; // AlertMessage حذف شد
+  InputGroup, Label, Input, SubmitButton, SecondaryButton, BottomLink
+} from './AuthStyles';
 import Link from 'next/link';
 import { useToast } from '../ui/ToastProvider';
 import { apiFetch } from '../../utils/apiFetch';
@@ -17,9 +17,10 @@ export default function ForgotClient() {
   const { showToast } = useToast();
   const [identity, setIdentity] = useState(''); // email_or_mobile
   const [confirmData, setConfirmData] = useState({ code: '', new_password: '', new_password_confirm: '' });
-  const [otpId, setOtpId] = useState(''); // دریافت شده از سرور در مرحله اول
+  const [otpId, setOtpId] = useState('');
+  const [deliveryChannel, setDeliveryChannel] = useState('');
 
-  const [isLoading, setIsLoading] = useState(false); // ساده‌سازی State وضعیت
+  const [isLoading, setIsLoading] = useState(false);
 
   // مرحله اول: درخواست بازیابی
   const handleRequest = async (e) => {
@@ -27,18 +28,33 @@ export default function ForgotClient() {
     setIsLoading(true);
 
     try {
+      const trimmedIdentity = identity.trim();
+      const normalizedIdentity = trimmedIdentity.includes('@') ? trimmedIdentity.toLowerCase() : trimmedIdentity;
       const res = await apiFetch('/api/v1/accounts/auth/password/reset/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email_or_mobile: identity })
+        body: JSON.stringify({ email_or_mobile: normalizedIdentity })
       });
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.detail || 'کاربری با این مشخصات یافت نشد.');
+      if (!res.ok) throw new Error(data.error || data.detail || Object.values(data)[0] || 'ارسال کد بازیابی انجام نشد.');
 
-      setOtpId(data.otp_id || 'dummy_id');
+      if (!data.otp_id) {
+        showToast('اگر حسابی با این مشخصات وجود داشته باشد، کد بازیابی برای آن ارسال می‌شود.', 'success');
+        return;
+      }
+
+      const resolvedChannel = data.delivery_channel || (normalizedIdentity.includes('@') ? 'email' : 'sms');
+      setIdentity(normalizedIdentity);
+      setOtpId(data.otp_id);
+      setDeliveryChannel(resolvedChannel);
       setStep(2);
-      showToast('کد تایید برای شما ارسال شد.', 'success');
+      showToast(
+        resolvedChannel === 'email'
+          ? 'کد بازیابی به ایمیل شما ارسال شد.'
+          : 'کد بازیابی به موبایل شما ارسال شد.',
+        'success'
+      );
 
     } catch (error) {
       showToast(error.message, 'error');
@@ -72,7 +88,7 @@ export default function ForgotClient() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'کد وارد شده اشتباه است یا منقضی شده.');
+      if (!res.ok) throw new Error(data.error || data.detail || Object.values(data)[0] || 'کد وارد شده اشتباه است یا منقضی شده.');
 
       showToast('رمز عبور با موفقیت تغییر کرد!', 'success');
       setTimeout(() => router.push('/auth/login'), 2000);
@@ -89,7 +105,9 @@ export default function ForgotClient() {
       <AuthCard>
         <AuthTitle>بازیابی رمز عبور</AuthTitle>
         <AuthSubtitle>
-          {step === 1 ? 'ایمیل یا شماره موبایل خود را وارد کنید.' : 'کد تایید ارسال شده و رمز عبور جدید را وارد کنید.'}
+          {step === 1
+            ? 'ایمیل یا شماره موبایل حساب خود را وارد کنید.'
+            : `کد شش‌رقمی ارسال‌شده به ${deliveryChannel === 'email' ? 'ایمیل' : 'موبایل'} را همراه رمز جدید وارد کنید.`}
         </AuthSubtitle>
 
         {step === 1 ? (
@@ -99,6 +117,7 @@ export default function ForgotClient() {
               <Input
                 type="text"
                 dir="ltr"
+                autoComplete="username"
                 value={identity}
                 onChange={(e) => setIdentity(e.target.value)}
                 required
@@ -115,8 +134,14 @@ export default function ForgotClient() {
               <Input
                 type="text"
                 dir="ltr"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                minLength={6}
+                maxLength={6}
+                placeholder="------"
                 value={confirmData.code}
-                onChange={(e) => setConfirmData({ ...confirmData, code: e.target.value })}
+                onChange={(e) => setConfirmData({ ...confirmData, code: e.target.value.replace(/\D/g, '').slice(0, 6) })}
                 required
               />
             </InputGroup>
@@ -125,6 +150,7 @@ export default function ForgotClient() {
               <Input
                 type="password"
                 dir="ltr"
+                autoComplete="new-password"
                 value={confirmData.new_password}
                 onChange={(e) => setConfirmData({ ...confirmData, new_password: e.target.value })}
                 required
@@ -135,6 +161,7 @@ export default function ForgotClient() {
               <Input
                 type="password"
                 dir="ltr"
+                autoComplete="new-password"
                 value={confirmData.new_password_confirm}
                 onChange={(e) => setConfirmData({ ...confirmData, new_password_confirm: e.target.value })}
                 required
@@ -143,6 +170,16 @@ export default function ForgotClient() {
             <SubmitButton type="submit" disabled={isLoading}>
               {isLoading ? 'در حال پردازش...' : 'تغییر رمز عبور'}
             </SubmitButton>
+            <SecondaryButton
+              type="button"
+              onClick={() => {
+                setStep(1);
+                setOtpId('');
+                setConfirmData({ code: '', new_password: '', new_password_confirm: '' });
+              }}
+            >
+              اصلاح ایمیل یا شماره موبایل
+            </SecondaryButton>
           </form>
         )}
 

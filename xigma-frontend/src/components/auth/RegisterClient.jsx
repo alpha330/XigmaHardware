@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   AuthContainer, AuthCard, AuthTitle, AuthSubtitle,
-  InputGroup, Label, Input, SubmitButton, BottomLink, Tabs, Tab
-} from './AuthStyles'; // AlertMessage حذف شد
+  AuthGrid, InputGroup, Label, Input, SubmitButton, BottomLink, Tabs, Tab
+} from './AuthStyles';
 import { useToast } from '../ui/ToastProvider';
 import { apiFetch } from '../../utils/apiFetch';
 
@@ -73,50 +73,49 @@ export default function RegisterClient() {
         <AuthSubtitle>به خانواده بزرگ XigmaHardware بپیوندید.</AuthSubtitle>
 
         <Tabs>
-          <Tab active={activeTab === 'email'} onClick={() => setActiveTab('email')}>ثبت‌نام با ایمیل</Tab>
-          <Tab active={activeTab === 'mobile'} onClick={() => setActiveTab('mobile')}>ثبت‌نام با موبایل</Tab>
+          <Tab type="button" aria-pressed={activeTab === 'email'} onClick={() => setActiveTab('email')}>ثبت‌نام با ایمیل</Tab>
+          <Tab type="button" aria-pressed={activeTab === 'mobile'} onClick={() => setActiveTab('mobile')}>ثبت‌نام با موبایل</Tab>
         </Tabs>
 
         <form onSubmit={handleSubmit}>
 
           {activeTab === 'email' ? (
             <>
-              {/* استفاده از Grid ریسپانسیو برای جلوگیری از بیرون‌زدگی اینپوت‌ها */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+              <AuthGrid>
                 <InputGroup>
                   <Label>نام</Label>
-                  <Input name="first_name" value={formData.first_name} onChange={handleChange} required />
+                  <Input name="first_name" autoComplete="given-name" value={formData.first_name} onChange={handleChange} required />
                 </InputGroup>
                 <InputGroup>
                   <Label>نام خانوادگی</Label>
-                  <Input name="last_name" value={formData.last_name} onChange={handleChange} required />
+                  <Input name="last_name" autoComplete="family-name" value={formData.last_name} onChange={handleChange} required />
                 </InputGroup>
-              </div>
+              </AuthGrid>
               <InputGroup>
                 <Label>ایمیل</Label>
-                <Input name="email" type="email" dir="ltr" value={formData.email} onChange={handleChange} required />
+                <Input name="email" type="email" dir="ltr" autoComplete="email" value={formData.email} onChange={handleChange} required />
               </InputGroup>
             </>
           ) : (
             <InputGroup>
               <Label>شماره موبایل</Label>
-              <Input name="mobile" type="tel" dir="ltr" placeholder="09123456789" value={formData.mobile} onChange={handleChange} required />
+              <Input name="mobile" type="tel" dir="ltr" inputMode="tel" autoComplete="tel" placeholder="09123456789" value={formData.mobile} onChange={handleChange} required />
             </InputGroup>
           )}
 
           <InputGroup>
             <Label>رمز عبور</Label>
-            <Input name="password" type="password" dir="ltr" value={formData.password} onChange={handleChange} required />
+            <Input name="password" type="password" dir="ltr" autoComplete="new-password" value={formData.password} onChange={handleChange} required />
           </InputGroup>
 
           <InputGroup>
             <Label>تکرار رمز عبور</Label>
-            <Input name="password_confirm" type="password" dir="ltr" value={formData.password_confirm} onChange={handleChange} required />
+            <Input name="password_confirm" type="password" dir="ltr" autoComplete="new-password" value={formData.password_confirm} onChange={handleChange} required />
           </InputGroup>
 
           {/* اگر ثبت نام موفق بود دکمه کلا غیرفعال می‌شود تا ریدایرکت انجام شود */}
           <SubmitButton type="submit" disabled={isLoading || isSuccess}>
-            {isLoading ? 'در حال پردازش...' : 'ثبت نام'}
+            {isLoading ? 'در حال پردازش...' : (isSuccess ? 'ثبت‌نام انجام شد' : 'ثبت نام')}
           </SubmitButton>
         </form>
 

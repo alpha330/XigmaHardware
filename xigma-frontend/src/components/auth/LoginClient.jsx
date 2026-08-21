@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { storeAuthTokens } from '../../utils/authCookies';
 import {
   AuthContainer, AuthCard, AuthTitle, AuthSubtitle, InputGroup,
-  Label, Input, SubmitButton, BottomLink, Tabs, Tab
+  Label, LabelRow, Input, SubmitButton, BottomLink, Tabs, Tab,
+  AuthInlineLink
 } from './AuthStyles';
 import { useToast } from '../ui/ToastProvider';
 import { apiFetch } from '../../utils/apiFetch';
@@ -22,7 +23,7 @@ export default function LoginClient() {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({ email_or_mobile: '', password: '' });
-  const [otpData, setOtpData] = useState({ otp_id: '', code: '' });
+  const [otpData, setOtpData] = useState({ otp_id: '' });
 
   // درخواست اولیه (یا ارسال کد OTP یا چک کردن رمز)
   const handleInitialSubmit = async (e) => {
@@ -41,7 +42,6 @@ export default function LoginClient() {
       });
 
       const data = await res.json();
-      console.log("LOGIN :",data)
       if (!res.ok) throw new Error(data.error || 'اطلاعات صحیح نیست.');
 
       if (activeTab === 'otp') {
@@ -82,7 +82,6 @@ export default function LoginClient() {
       });
 
       const data = await res.json();
-      console.log("VERIFY :",data)
       if (!res.ok) throw new Error(data.error || 'کد نامعتبر است.');
 
       saveTokens(data.tokens);
@@ -103,11 +102,16 @@ export default function LoginClient() {
     <AuthContainer>
       <AuthCard>
         <AuthTitle>{step === 1 ? 'ورود به حساب' : 'تایید کد ورود'}</AuthTitle>
+        <AuthSubtitle>
+          {step === 1
+            ? 'با رمز عبور یا کد یک‌بار مصرف وارد حساب خود شوید.'
+            : `کد شش‌رقمی ارسال‌شده برای ${formData.email_or_mobile} را وارد کنید.`}
+        </AuthSubtitle>
 
         {step === 1 && (
           <Tabs>
-            <Tab active={activeTab === 'password'} onClick={() => setActiveTab('password')}>با رمز عبور</Tab>
-            <Tab active={activeTab === 'otp'} onClick={() => setActiveTab('otp')}>با کد یکبار مصرف</Tab>
+            <Tab type="button" aria-pressed={activeTab === 'password'} onClick={() => setActiveTab('password')}>با رمز عبور</Tab>
+            <Tab type="button" aria-pressed={activeTab === 'otp'} onClick={() => setActiveTab('otp')}>با کد یکبار مصرف</Tab>
           </Tabs>
         )}
 
@@ -115,17 +119,17 @@ export default function LoginClient() {
           <form onSubmit={handleInitialSubmit}>
             <InputGroup>
               <Label>ایمیل یا موبایل</Label>
-              <Input dir="ltr" value={formData.email_or_mobile}
+              <Input dir="ltr" autoComplete="username" value={formData.email_or_mobile}
                 onChange={(e) => setFormData({ ...formData, email_or_mobile: e.target.value })} required />
             </InputGroup>
 
             {activeTab === 'password' && (
               <InputGroup>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <LabelRow>
                   <Label>رمز عبور</Label>
-                  <Link href="/auth/forgot-password" style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>فراموشی رمز؟</Link>
-                </div>
-                <Input type="password" dir="ltr" value={formData.password}
+                  <AuthInlineLink href="/auth/forgot-password">فراموشی رمز؟</AuthInlineLink>
+                </LabelRow>
+                <Input type="password" dir="ltr" autoComplete="current-password" value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
               </InputGroup>
             )}

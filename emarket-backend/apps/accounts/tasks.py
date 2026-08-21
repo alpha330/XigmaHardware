@@ -42,6 +42,7 @@ def send_welcome_email(self, user_id):
 
     Args:
         user_id: شناسه کاربر
+        code: کد شش‌رقمی بازیابی رمز عبور
     """
     try:
         user = User.objects.get(id=user_id)
@@ -159,7 +160,7 @@ def send_verification_email(self, user_id):
     max_retries=3,
     default_retry_delay=60
 )
-def send_password_reset_email(self, user_id):
+def send_password_reset_email(self, user_id, code):
     """
     ارسال ایمیل بازیابی رمز عبور
 
@@ -173,27 +174,18 @@ def send_password_reset_email(self, user_id):
             logger.warning(f"User {user_id} has no email")
             return
 
-        # تولید توکن
-        from apps.accounts.services.auth_service import AuthService
-        token = AuthService.generate_email_token(user)
-
-        # لینک بازیابی
-        reset_url = f"{getattr(settings, 'SITE_URL', 'http://localhost:8000')}/auth/reset-password/?token={token}&email={user.email}"
-
         context = {
             'user': user,
-            'reset_url': reset_url,
-            'token': token,
+            'code': code,
             'site_name': getattr(settings, 'SITE_NAME', 'Marketplace'),
-            'expiry_minutes': 30,
+            'expiry_minutes': 2,
             'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@marketplace.com'),
-            'ip_address': user.last_login_ip or 'Unknown',
         }
 
         html_content = render_to_string('accounts/emails/reset_password.html', context)
         text_content = render_to_string('accounts/emails/reset_password.txt', context)
 
-        subject = _('Reset Your Password')
+        subject = _('Your Password Reset Code')
 
         email = EmailMultiAlternatives(
             subject=subject,

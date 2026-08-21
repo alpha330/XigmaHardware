@@ -2,9 +2,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import Link from 'next/link';
 import {
-  AuthContainer, AuthCard, AuthTitle, AuthSubtitle, SubmitButton
+  AuthContainer, AuthCard, AuthTitle, AuthSubtitle, AuthActionLink, StatusIcon
 } from './AuthStyles';
 import { useToast } from '../ui/ToastProvider';
 import { apiFetch } from '../../utils/apiFetch';
@@ -61,35 +60,27 @@ export default function VerifyEmailClient({ token }) {
         {status === 'loading' && (
           <>
             <AuthSubtitle>در حال بررسی و تایید ایمیل شما، لطفا منتظر بمانید...</AuthSubtitle>
-            <div style={{ margin: '2rem 0', fontSize: '2rem' }}>⏳</div>
+            <StatusIcon data-status="loading">⏳</StatusIcon>
           </>
         )}
 
         {status === 'success' && (
           <>
-            <AuthSubtitle style={{ color: 'var(--success)' }}>
+            <AuthSubtitle>
               حساب کاربری شما با موفقیت فعال شد.
             </AuthSubtitle>
-            <div style={{ margin: '2rem 0', fontSize: '3rem' }}>✅</div>
-            <Link href="/auth/login" style={{ width: '100%', display: 'block' }}>
-              <SubmitButton type="button">
-                ورود به حساب کاربری
-              </SubmitButton>
-            </Link>
+            <StatusIcon data-status="success">✅</StatusIcon>
+            <AuthActionLink href="/auth/login">ورود به حساب کاربری</AuthActionLink>
           </>
         )}
 
         {status === 'error' && (
           <>
-            <AuthSubtitle style={{ color: 'var(--error)' }}>
+            <AuthSubtitle>
               متاسفانه تایید ایمیل با خطا مواجه شد. ممکن است لینک منقضی شده باشد.
             </AuthSubtitle>
-            <div style={{ margin: '2rem 0', fontSize: '3rem' }}>❌</div>
-            <Link href="/auth/login" style={{ width: '100%', display: 'block' }}>
-              <SubmitButton type="button" style={{ backgroundColor: 'var(--border)', color: 'var(--textMain)' }}>
-                بازگشت به صفحه ورود
-              </SubmitButton>
-            </Link>
+            <StatusIcon data-status="error">❌</StatusIcon>
+            <AuthActionLink href="/auth/login" data-variant="secondary">بازگشت به صفحه ورود</AuthActionLink>
           </>
         )}
       </AuthCard>

@@ -1,5 +1,5 @@
 import uuid
-import random
+import secrets
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -99,7 +99,7 @@ class OTPCode(models.Model):
             is_used=False
         ).update(is_used=True)
 
-        code = ''.join([str(random.randint(0, 9)) for _ in range(length)])
+        code = ''.join(secrets.choice('0123456789') for _ in range(length))
 
         otp = cls.objects.create(
             user=user,

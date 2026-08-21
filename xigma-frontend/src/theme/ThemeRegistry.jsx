@@ -86,6 +86,7 @@ export default function ThemeRegistry({ children }) {
       --input-background: ${theme.colors.inputBackground};
       --hover: ${theme.colors.hover};
       --primary: ${theme.colors.primary};
+      --on-primary: ${theme.colors.onPrimary};
       --primary-light: ${theme.colors.primaryLight};
       --textMain: ${theme.colors.textMain};
       --textMuted: ${theme.colors.textMuted};

@@ -7,27 +7,55 @@ import CircularTimer from './CircularTimer';
 const InputContainer = styled.div`
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: clamp(6px, 2vw, 10px);
   margin: 1rem 0;
-  direction: ltr; /* مهم برای ترتیب درست اینپوت‌ها */
+  direction: ltr;
 `;
 
 const SingleInput = styled.input`
-  width: 45px;
-  height: 55px;
+  width: clamp(38px, 10vw, 48px);
+  height: 56px;
   text-align: center;
   font-size: 1.5rem;
   font-weight: bold;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.background};
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.inputBackground};
   color: ${({ theme }) => theme.colors.textMain};
   padding: 0;
   outline: none;
+  caret-color: ${({ theme }) => theme.colors.primary};
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+  }
 
   &:focus {
     border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primary}33;
+    box-shadow: 0 0 0 4px ${({ theme }) => theme.colors.focusRing};
+  }
+`;
+
+const TimerArea = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1.5rem;
+`;
+
+const ResendButton = styled.button`
+  padding: 0.7rem 1.25rem;
+  border: 1px solid ${({ theme }) => theme.colors.primary};
+  border-radius: 10px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.primary};
+  cursor: pointer;
+  font-weight: 800;
+  transition: color 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.primaryLight};
   }
 `;
 
@@ -102,7 +130,10 @@ export default function OTPInput({ length = 6, onComplete, resendOTP }) {
           <SingleInput
             key={index}
             type="text"
-            maxLength={6} // برای اینکه Paste راحت عمل کند
+            inputMode="numeric"
+            autoComplete={index === 0 ? 'one-time-code' : 'off'}
+            aria-label={`رقم ${index + 1} کد تایید`}
+            maxLength={6}
             value={data}
             onChange={(e) => handleChange(e, index)}
             onKeyDown={(e) => handleKeyDown(e, index)}
@@ -110,29 +141,18 @@ export default function OTPInput({ length = 6, onComplete, resendOTP }) {
           />
         ))}
       </InputContainer>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '1.5rem' }}>
+      <TimerArea>
         {timer > 0 ? (
           <CircularTimer timeLeft={timer} />
         ) : (
-          <button
+          <ResendButton
+            type="button"
             onClick={() => { setTimer(120); resendOTP(); }}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '8px',
-              border: '1px solid var(--primary)',
-              background: 'transparent',
-              color: 'var(--primary)',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              transition: '0.3s'
-            }}
-            onMouseOver={(e) => e.target.style.background = 'var(--primary-light)'}
-            onMouseOut={(e) => e.target.style.background = 'transparent'}
           >
             ارسال مجدد کد
-          </button>
+          </ResendButton>
         )}
-      </div>
+      </TimerArea>
     </div>
   );
 }
