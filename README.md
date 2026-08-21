@@ -42,6 +42,25 @@ npm run dev
 make superuser
 ```
 
+## داده‌های نمونه‌ی انبار
+
+برای ایجاد یا به‌روزرسانی کاتالوگ نمونه در محیط Development اجرا کنید:
+
+```bash
+make seed-stock
+```
+
+این فرمان ۴ شاخه‌ی اصلی دیتاسنتر، سازمانی/اداری، خانگی و ورک‌استیشن را همراه با زیرشاخه‌ها، برندها، سری‌ها و محصولات نمونه می‌سازد. اجرای مجدد آن رکورد تکراری ایجاد نمی‌کند. محصولات با قیمت آزمایشی و وضعیت پیش‌نویس ساخته می‌شوند و در مارکت قابل مشاهده نیستند.
+
+فرمان‌های مستقل و حالت آزمایشی نیز در دسترس‌اند:
+
+```bash
+python manage.py seed_stock_categories
+python manage.py seed_stock_brands
+python manage.py seed_stock_products
+python manage.py seed_stock_sample --dry-run
+```
+
 ## تست و کنترل کیفیت
 
 Backend:

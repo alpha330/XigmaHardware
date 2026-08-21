@@ -2,7 +2,7 @@ DOCKER_COMPOSE ?= docker compose
 
 .PHONY: help dev dev-build dev-tools dev-down logs stage stage-down prod prod-down \
 	test test-docker frontend-install frontend-lint frontend-build shell migrate \
-	makemigrations superuser collectstatic install install-prod
+	makemigrations superuser seed-stock collectstatic install install-prod
 
 help:
 	@echo "XigmaHardware commands"
@@ -12,6 +12,7 @@ help:
 	@echo "  make dev-down        Stop development services"
 	@echo "  make test            Run backend tests locally"
 	@echo "  make test-docker     Run backend tests in Docker"
+	@echo "  make seed-stock      Seed the development stock sample catalog"
 	@echo "  make frontend-build  Install, lint and build the frontend"
 	@echo "  make stage           Build and start staging"
 	@echo "  make prod            Build and start production"
@@ -69,6 +70,9 @@ makemigrations:
 
 superuser:
 	$(DOCKER_COMPOSE) -f docker-compose.dev.yml exec backend python manage.py createsuperuser
+
+seed-stock:
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml exec backend python manage.py seed_stock_sample
 
 collectstatic:
 	$(DOCKER_COMPOSE) -f docker-compose.dev.yml exec backend python manage.py collectstatic --noinput
