@@ -82,7 +82,7 @@ const WishlistBtn = styled.button`
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(255, 255, 255, 0.8);
+  background: ${({ theme }) => theme.colors.surfaceTranslucent};
   backdrop-filter: blur(4px);
   border: none;
   border-radius: 50%;
@@ -113,7 +113,7 @@ const WishlistBtn = styled.button`
 
   &:hover {
     transform: scale(1.1);
-    background: #fff;
+    background: ${({ theme }) => theme.colors.surfaceElevated};
     svg { stroke: ${({ theme }) => theme.colors.error}; }
   }
 

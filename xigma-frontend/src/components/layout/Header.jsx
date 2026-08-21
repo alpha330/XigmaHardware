@@ -282,7 +282,7 @@ const LogoutButton = styled.button`
   gap: 12px;
   padding: 11px 18px;
   font-size: 14.5px;
-  color: #ef4444;
+  color: ${({ theme }) => theme.colors.error};
   background: none;
   border: none;
   text-align: left;
@@ -290,7 +290,21 @@ const LogoutButton = styled.button`
   transition: background 0.15s;
 
   &:hover {
-    background: #fef2f2;
+    background: ${({ theme }) => theme.colors.errorSurface};
+  }
+`;
+
+const AuthLink = styled(Link)`
+  padding: 10px 20px;
+  background: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.white};
+  border-radius: 10px;
+  font-weight: 600;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.secondary};
+    transform: translateY(-1px);
   }
 `;
 
@@ -499,19 +513,7 @@ export default function Header() {
               )}
             </UserMenuWrapper>
           ) : (
-            <Link href="/auth/login">
-              <button style={{
-                padding: '10px 20px',
-                background: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '10px',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}>
-                ورود / ثبت‌نام
-              </button>
-            </Link>
+            <AuthLink href="/auth/login">ورود / ثبت‌نام</AuthLink>
           )}
         </Actions>
       </HeaderContent>

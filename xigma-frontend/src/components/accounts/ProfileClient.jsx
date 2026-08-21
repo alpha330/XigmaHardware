@@ -62,12 +62,12 @@ const FormGrid = styled.div`
 const Title = styled.h1`
   font-size: 2rem;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors?.textPrimary || '#f1f5f9'};
+  color: ${({ theme }) => theme.colors.textPrimary};
   margin-bottom: 0.5rem;
 `;
 
 const Subtitle = styled.p`
-  color: ${({ theme }) => theme.colors?.textMuted || '#94a3b8'};
+  color: ${({ theme }) => theme.colors.textMuted};
   font-size: 1rem;
 `;
 
@@ -80,26 +80,70 @@ const FormGroup = styled.div`
 const Label = styled.label`
   font-size: 14px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors?.textSecondary || '#cbd5e1'};
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 const StyledInput = styled.input`
   padding: 12px 16px;
-  border: 1px solid ${({ theme }) => theme.colors?.border || '#475569'};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 10px;
   font-size: 15px;
-  background: ${({ theme }) => theme.colors?.surface || '#1e293b'};
-  color: ${({ theme }) => theme.colors?.textPrimary || '#f1f5f9'};
+  background: ${({ theme }) => theme.colors.inputBackground};
+  color: ${({ theme }) => theme.colors.textPrimary};
   transition: all 0.2s ease;
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.colors?.primary || '#60a5fa'};
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focusRing};
   }
 
   &::placeholder {
-    color: ${({ theme }) => theme.colors?.textMuted || '#64748b'};
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
+`;
+
+const DatePickerField = styled.div`
+  .rmdp-container {
+    width: 100%;
+  }
+
+  .custom-date-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    border-radius: 10px;
+    background: ${({ theme }) => theme.colors.inputBackground};
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 15px;
+  }
+
+  .custom-date-input:focus {
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focusRing};
+    outline: none;
+  }
+
+  .rmdp-wrapper,
+  .rmdp-calendar {
+    background: ${({ theme }) => theme.colors.surfaceElevated};
+    color: ${({ theme }) => theme.colors.textMain};
+  }
+
+  .rmdp-header-values,
+  .rmdp-week-day,
+  .rmdp-day span {
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
+
+  .rmdp-arrow {
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+
+  .rmdp-day.rmdp-selected span,
+  .rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden) span:hover {
+    background: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.white};
   }
 `;
 
@@ -206,28 +250,21 @@ function PersonalInfoForm() {
         {/* تاریخ تولد شمسی */}
         <FormGroup>
           <Label>تاریخ تولد (شمسی)</Label>
-          <Controller
-            name="birth_date"
-            control={control}
-            render={({ field }) => (
-              <DatePicker
-                value={field.value}
-                onChange={field.onChange}
-                calendar={persian}
-                locale={persian_fa}
-                inputClass="custom-date-input"
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: '1px solid #475569',
-                  background: '#1e293b',
-                  color: '#f1f5f9',
-                  fontSize: '15px'
-                }}
-              />
-            )}
-          />
+          <DatePickerField>
+            <Controller
+              name="birth_date"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  calendar={persian}
+                  locale={persian_fa}
+                  inputClass="custom-date-input"
+                />
+              )}
+            />
+          </DatePickerField>
         </FormGroup>
 
         <FormGroup>

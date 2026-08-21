@@ -34,12 +34,14 @@ const FilterTitle = styled.h3`
 const SearchInputWrapper = styled.div` position: relative; margin-bottom: 20px; `;
 
 const SearchInput = styled.input`
-  width: 100%; padding: 12px 16px 12px 44px; border: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'};
-  border-radius: 12px; font-size: 14px; background: ${({ theme }) => theme.colors?.background || '#f9fafb'};
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors?.primary || '#3b82f6'}; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+  width: 100%; padding: 12px 16px 12px 44px; border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px; font-size: 14px; background: ${({ theme }) => theme.colors.inputBackground};
+  color: ${({ theme }) => theme.colors.textMain};
+  &::placeholder { color: ${({ theme }) => theme.colors.textMuted}; }
+  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.focusRing}; }
 `;
 
-const SearchIcon = styled.div` position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 18px; `;
+const SearchIcon = styled.div` position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: ${({ theme }) => theme.colors.textMuted}; font-size: 18px; `;
 
 const CategoryList = styled.div` display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; `;
 
@@ -53,7 +55,7 @@ const CategoryItem = styled.a`
 
 const BrandList = styled.div` max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; margin-bottom: 24px; `;
 
-const BrandItem = styled.label` display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: background 0.2s; &:hover { background: #f8fafc; } `;
+const BrandItem = styled.label` display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; color: ${({ theme }) => theme.colors.textSecondary}; transition: background 0.2s; &:hover { background: ${({ theme }) => theme.colors.hover}; } `;
 
 const Checkbox = styled.input` width: 18px; height: 18px; accent-color: ${({ theme }) => theme.colors?.primary || '#3b82f6'}; `;
 
@@ -63,19 +65,19 @@ const PriceGrid = styled.div` display: grid; grid-template-columns: 1fr 1fr; gap
 
 const PriceField = styled.div``;
 
-const PriceLabel = styled.div` font-size: 12px; color: #6b7280; margin-bottom: 4px; `;
+const PriceLabel = styled.div` font-size: 12px; color: ${({ theme }) => theme.colors.textMuted}; margin-bottom: 4px; `;
 
-const PriceInput = styled.input` width: 100%; padding: 10px 12px; border: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'}; border-radius: 10px; font-size: 14px; text-align: center; box-sizing: border-box; `;
+const PriceInput = styled.input` width: 100%; padding: 10px 12px; border: 1px solid ${({ theme }) => theme.colors.border}; border-radius: 10px; font-size: 14px; text-align: center; box-sizing: border-box; background: ${({ theme }) => theme.colors.inputBackground}; color: ${({ theme }) => theme.colors.textMain}; `;
 
-const RangeSliderContainer = styled.div` position: relative; height: 6px; background: #e5e7eb; border-radius: 999px; margin: 20px 8px 12px; `;
+const RangeSliderContainer = styled.div` position: relative; height: 6px; background: ${({ theme }) => theme.colors.border}; border-radius: 999px; margin: 20px 8px 12px; `;
 
 const RangeTrack = styled.div` position: absolute; height: 6px; background: ${({ theme }) => theme.colors?.primary || '#3b82f6'}; border-radius: 999px; transition: all 0.1s ease; `;
 
 const RangeInput = styled.input` position: absolute; width: 100%; pointer-events: none; appearance: none; height: 6px; background: transparent; z-index: 2;
-  &::-webkit-slider-thumb { pointer-events: all; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: white; border: 3px solid ${({ theme }) => theme.colors?.primary || '#3b82f6'}; box-shadow: 0 2px 6px rgba(0,0,0,0.15); cursor: pointer; margin-top: -6px; z-index: 3; }
+  &::-webkit-slider-thumb { pointer-events: all; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: ${({ theme }) => theme.colors.surfaceElevated}; border: 3px solid ${({ theme }) => theme.colors.primary}; box-shadow: 0 2px 6px rgba(0,0,0,0.15); cursor: pointer; margin-top: -6px; z-index: 3; }
 `;
 
-const SortSelect = styled.select` width: 100%; padding: 12px 16px; border: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'}; border-radius: 12px; font-size: 14px; background: white; cursor: pointer; margin-bottom: 20px; `;
+const SortSelect = styled.select` width: 100%; padding: 12px 16px; border: 1px solid ${({ theme }) => theme.colors.border}; border-radius: 12px; font-size: 14px; background: ${({ theme }) => theme.colors.inputBackground}; color: ${({ theme }) => theme.colors.textMain}; cursor: pointer; margin-bottom: 20px; `;
 
 const FilterRow = styled.div` display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; `;
 
@@ -83,9 +85,9 @@ const SwitchLabel = styled.label` display: flex; align-items: center; gap: 10px;
 
 const ActiveFilters = styled.div` display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; `;
 
-const FilterChip = styled.div` display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; color: #334155; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 500; `;
+const FilterChip = styled.div` display: inline-flex; align-items: center; gap: 6px; background: ${({ theme }) => theme.colors.primaryLight}; color: ${({ theme }) => theme.colors.textMain}; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 500; `;
 
-const ClearButton = styled.button` background: none; border: none; color: #ef4444; font-size: 13px; cursor: pointer; padding: 4px 8px; &:hover { text-decoration: underline; } `;
+const ClearButton = styled.button` background: none; border: none; color: ${({ theme }) => theme.colors.error}; font-size: 13px; cursor: pointer; padding: 4px 8px; &:hover { text-decoration: underline; } `;
 
 const TopBar = styled.div` display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; `;
 
@@ -93,7 +95,7 @@ const ResultCount = styled.div` font-size: 15px; color: ${({ theme }) => theme.c
 
 const Grid = styled.div` display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; `;
 
-const EmptyState = styled.div` text-align: center; padding: 60px 20px; color: #6b7280; font-size: 15px; `;
+const EmptyState = styled.div` text-align: center; padding: 60px 20px; color: ${({ theme }) => theme.colors.textMuted}; font-size: 15px; `;
 
 // ==================== PAGINATION ====================
 const PaginationWrapper = styled.div`
@@ -101,14 +103,14 @@ const PaginationWrapper = styled.div`
 `;
 
 const PageButton = styled.button`
-  padding: 8px 14px; border: 1px solid ${({ theme }) => theme.colors?.border || '#e5e7eb'}; background: white;
+  padding: 8px 14px; border: 1px solid ${({ theme }) => theme.colors.border}; background: ${({ theme }) => theme.colors.surface}; color: ${({ theme }) => theme.colors.textMain};
   border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s;
-  &:hover { background: #f8fafc; }
-  &[data-active='true'] { background: ${({ theme }) => theme.colors?.primary || '#3b82f6'}; color: white; border-color: ${({ theme }) => theme.colors?.primary || '#3b82f6'}; font-weight: 600; }
+  &:hover { background: ${({ theme }) => theme.colors.hover}; }
+  &[data-active='true'] { background: ${({ theme }) => theme.colors.primary}; color: ${({ theme }) => theme.colors.white}; border-color: ${({ theme }) => theme.colors.primary}; font-weight: 600; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
-const PageInfo = styled.div` font-size: 14px; color: #6b7280; margin: 0 12px; `;
+const PageInfo = styled.div` font-size: 14px; color: ${({ theme }) => theme.colors.textMuted}; margin: 0 12px; `;
 
 // ==================== MAIN COMPONENT ====================
 export default function MarketClient({ products = [], categories = [], brands = [], pagination = {} }) {
@@ -282,7 +284,7 @@ export default function MarketClient({ products = [], categories = [], brands = 
 
             {pageNumbers.map((page, index) =>
               page === '...' ? (
-                <span key={index} style={{ padding: '0 8px', color: '#9ca3af' }}>...</span>
+                <span key={index} style={{ padding: '0 8px', color: 'var(--textMuted)' }}>...</span>
               ) : (
                 <PageButton
                   key={index}

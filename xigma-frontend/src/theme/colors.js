@@ -1,29 +1,61 @@
 // src/theme/colors.js
 
+const sharedColors = {
+  white: '#FFFFFF',
+};
+
 export const lightTheme = {
+  mode: 'light',
   colors: {
-    background: '#FFFFFF',       // سفید خالص برای بک‌گراند
-    surface: '#F5F7FA',          // سفید مایل به آبی برای کارت‌ها
-    primary: '#0056D2',          // آبی نفتی/تکنولوژیک
-    secondary: '#003B8E',        // آبی تیره‌تر برای هاور
-    textMain: '#111827',         // مشکی/خاکستری بسیار تیره برای متن
-    textMuted: '#6B7280',        // خاکستری برای متن‌های فرعی
-    border: '#E5E7EB',           // رنگ حاشیه‌ها
+    ...sharedColors,
+    background: '#F8FAFC',
+    surface: '#FFFFFF',
+    surfaceElevated: '#FFFFFF',
+    surfaceTranslucent: 'rgba(255, 255, 255, 0.88)',
+    inputBackground: '#FFFFFF',
+    hover: '#EFF6FF',
+    primary: '#0056D2',
+    primaryLight: '#DBEAFE',
+    secondary: '#003B8E',
+    textMain: '#111827',
+    textPrimary: '#111827',
+    textSecondary: '#475569',
+    textMuted: '#64748B',
+    border: '#E2E8F0',
+    borderStrong: '#CBD5E1',
     error: '#EF4444',
+    errorSurface: '#FEF2F2',
     success: '#10B981',
+    warning: '#D97706',
+    focusRing: 'rgba(0, 86, 210, 0.22)',
+    overlay: 'rgba(15, 23, 42, 0.58)',
   }
 };
 
 export const darkTheme = {
+  mode: 'dark',
   colors: {
-    background: '#0B0F19',       // مشکی مایل به سرمه‌ای (دارک مدرن)
-    surface: '#111827',          // مشکی روشن‌تر برای کارت‌ها
-    primary: '#3B82F6',          // آبی روشن برای دیده شدن در دارک مود
-    secondary: '#60A5FA',        // آبی ملایم‌تر برای هاور
-    textMain: '#F9FAFB',         // سفید برای متن
-    textMuted: '#9CA3AF',        // خاکستری روشن برای متن فرعی
-    border: '#374151',
+    ...sharedColors,
+    background: '#0B1120',
+    surface: '#111827',
+    surfaceElevated: '#182235',
+    surfaceTranslucent: 'rgba(17, 24, 39, 0.9)',
+    inputBackground: '#0F172A',
+    hover: '#1E293B',
+    primary: '#60A5FA',
+    primaryLight: '#172554',
+    secondary: '#93C5FD',
+    textMain: '#F8FAFC',
+    textPrimary: '#F8FAFC',
+    textSecondary: '#CBD5E1',
+    textMuted: '#94A3B8',
+    border: '#334155',
+    borderStrong: '#475569',
     error: '#F87171',
+    errorSurface: '#3F1D24',
     success: '#34D399',
+    warning: '#FBBF24',
+    focusRing: 'rgba(96, 165, 250, 0.28)',
+    overlay: 'rgba(2, 6, 23, 0.76)',
   }
 };

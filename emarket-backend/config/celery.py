@@ -1,8 +1,9 @@
 import os
 from celery import Celery
 from celery.schedules import crontab
+from config.environment import get_settings_module
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', get_settings_module())
 
 app = Celery('marketplace')
 app.conf.broker_connection_retry_on_startup = True

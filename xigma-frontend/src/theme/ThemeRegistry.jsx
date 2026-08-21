@@ -55,14 +55,17 @@ export default function ThemeRegistry({ children }) {
   });
 
   useEffect(() => {
-    // خواندن تم از مرورگر کاربر پس از لود شدن
     const storedTheme = localStorage.getItem('theme');
-    if (storedTheme === 'dark') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsDarkMode(true);
-    }
+    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsDarkMode(storedTheme ? storedTheme === 'dark' : Boolean(prefersDark));
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = isDarkMode ? 'dark' : 'light';
+    document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
+  }, [isDarkMode]);
 
   const toggleTheme = () => {
     setIsDarkMode((prev) => {
@@ -75,6 +78,24 @@ export default function ThemeRegistry({ children }) {
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   const globalStyles = css`
+    :root {
+      color-scheme: ${theme.mode};
+      --background: ${theme.colors.background};
+      --surface: ${theme.colors.surface};
+      --surface-elevated: ${theme.colors.surfaceElevated};
+      --input-background: ${theme.colors.inputBackground};
+      --hover: ${theme.colors.hover};
+      --primary: ${theme.colors.primary};
+      --primary-light: ${theme.colors.primaryLight};
+      --textMain: ${theme.colors.textMain};
+      --textMuted: ${theme.colors.textMuted};
+      --border: ${theme.colors.border};
+      --error: ${theme.colors.error};
+      --success: ${theme.colors.success};
+      --warning: ${theme.colors.warning};
+      --focus-ring: ${theme.colors.focusRing};
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -82,16 +103,55 @@ export default function ThemeRegistry({ children }) {
     }
     html {
       scroll-behavior: smooth;
+      background-color: ${theme.colors.background};
     }
     body {
       background-color: ${theme.colors.background};
       color: ${theme.colors.textMain};
       transition: background-color 0.3s ease, color 0.3s ease;
       overflow-x: hidden;
+      min-height: 100vh;
     }
     a {
       text-decoration: none;
       color: inherit;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      color: ${theme.colors.textMain};
+      font: inherit;
+    }
+
+    input,
+    textarea,
+    select {
+      background-color: ${theme.colors.inputBackground};
+      border-color: ${theme.colors.border};
+      caret-color: ${theme.colors.primary};
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: ${theme.colors.textMuted};
+      opacity: 1;
+    }
+
+    select option {
+      background-color: ${theme.colors.surface};
+      color: ${theme.colors.textMain};
+    }
+
+    *:focus-visible {
+      outline: 2px solid ${theme.colors.primary};
+      outline-offset: 2px;
+    }
+
+    ::selection {
+      background: ${theme.colors.primaryLight};
+      color: ${theme.colors.textMain};
     }
   `;
 

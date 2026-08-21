@@ -12,20 +12,14 @@ import sys
 from pathlib import Path
 
 from django.core.asgi import get_asgi_application
+from config.environment import get_settings_module
 
 # Add project root to path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
 
-# Set default settings module
 run_as = os.environ.get('RUN_AS', 'dev')
-
-if run_as == 'prod':
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.prod')
-elif run_as == 'stage':
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.stage')
-else:
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.dev')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', get_settings_module())
 
 # Initialize Django ASGI application early
 django_asgi_app = get_asgi_application()
