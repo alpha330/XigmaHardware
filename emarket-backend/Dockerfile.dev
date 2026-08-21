@@ -48,9 +48,10 @@ RUN pip install --upgrade pip setuptools wheel && \
 # Create required directories
 RUN mkdir -p /app/logs /app/staticfiles /app/media
 
-# ✅ اول entrypoint رو کپی کن و chmod کن
+# Normalize Windows checkouts defensively before the script is executed.
 COPY entrypoint.dev.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh \
+    && chmod +x /entrypoint.sh
 
 # ✅ بعد source code رو کپی کن
 COPY . .
@@ -60,6 +61,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health/ || exit 1
 
-# ✅ ENTRYPOINT با مسیر مطلق
-ENTRYPOINT ["/entrypoint.sh"]
+# Use an explicit interpreter so execution does not depend on the host checkout
+# preserving the shebang/executable metadata.
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

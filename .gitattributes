@@ -1,2 +1,10 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Shell entrypoints are executed inside Linux containers. Keep their line
+# endings stable even when the repository is checked out on Windows.
+*.sh text eol=lf
+Dockerfile* text eol=lf
+Makefile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
